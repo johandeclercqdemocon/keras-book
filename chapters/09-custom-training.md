@@ -351,7 +351,8 @@ Optimizer.apply(grads, trainable_variables=None)
 | `Metric.add_variable(shape, initializer)` | required | makes one state variable | — |
 | `Metric.reset_state()` | — | you write it; clear the state | a no-op gave 0.6929 at epoch 3, against 0.8934 |
 | `compute_loss(x, y, y_pred, sample_weight)` | all `None` | the loss that `train_step` uses | override it for a change that works on every back end |
-| `compute_metrics(x, y, y_pred, sample_weight)` | required | updates the compiled metrics | returns the loss as 0.0 if nothing updated the loss tracker |
+| `compute_metrics(x, y, y_pred)` | required | updates the compiled metrics | returns the loss as 0.0 if nothing updated the loss tracker |
+| `compute_metrics(sample_weight)` | `None` | weights of the samples | — |
 | `Optimizer.apply(grads, trainable_variables)` | — | one update step | — |
 
 ## What you have now
