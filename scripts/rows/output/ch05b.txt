@@ -1,0 +1,1 @@
+adapt on (x, y): mean equals x mean: True

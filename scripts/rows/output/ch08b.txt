@@ -1,0 +1,2 @@
+rate 1.0 training: [[0. 0. 0. 0. 0. 0. 0. 0.]]
+stddev 2.0: ValueError Invalid value received for argument `stddev`. Expected a float value between 0 and 1. Received: stdd

@@ -1,0 +1,15 @@
+Loss name default: sq | mean: 7.5 sum: 30.0
+reduction None shape: (4, 1)
+reduction 'mean' accepted: 7.5
+Metric name default: m
+python-state metric per epoch: [2.0, 0.0]  variable metric: [1347.0, 1347.0]  batches per epoch 43
+add_variable no initializer: TypeError: Metric.add_variable() missing 1 required positional argument: 'initializer'
+add_variable aggregation default: sum dtype float32
+compute_loss training True/False: 4.2105 4.2105 penalty 1.674
+compute_loss no y_pred: ValueError: Attempt to convert a value (None) with an unsupported type (<class 'NoneType'>) to a Tensor.
+compute_loss sample_weight half zero: 2.9086 first 16 only: 4.1431
+compute_metrics: {'loss': 4.1806, 'accuracy': 0.1562} second call: {'loss': 4.1806, 'accuracy': 0.1562}
+after reset: {'loss': 0.0, 'accuracy': 0.1562}
+apply no variables, unbuilt: ValueError: When passing `grads` without `variables`, the optimizer must already be built on a list of variables. Call `optimizer.build(traina
+apply 1 grad 2 vars: ok [0.9] [1.]
+second apply without variables after build: w1 = [0.6999999] iterations 2

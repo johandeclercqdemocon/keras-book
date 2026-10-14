@@ -1,0 +1,18 @@
+dropout 0.5: kept share 0.4968 kept values [2.0] mean 0.9936
+inference unchanged: True
+rate 1.0 accepted
+rate 1.5 ValueError: Invalid value received for argument `rate`. Expected a float value between 0 and 1. Received: rate=1.5
+rate -0.1 ValueError: Invalid value received for argument `rate`. Expected a float value between 0 and 1. Received: rate=-0.1
+noise_shape (4,1):
+ [[0. 0. 0. 0. 0. 0.]
+ [2. 2. 2. 2. 2. 2.]
+ [0. 0. 0. 0. 0. 0.]
+ [0. 0. 0. 0. 0. 0.]]
+same seed two layers equal masks: True  one layer second call equal: False
+L2 default penalty on 10 ones: [0.1]
+L2 default value: 0.01
+L2 -0.1 ValueError: Invalid value for argument l2: expected a non-negative float.Received: l2=-0.1
+L2 '0.1' ValueError: Invalid value for argument l2: expected a non-negative float.Received: l2=0.1
+noise std in training: 0.3001  inference max abs: 0.0
+negative stddev: ValueError: Invalid value received for argument `stddev`. Expected a float value between 0 and 1. Received: stddev=-1.0
+same seed equal noise: True

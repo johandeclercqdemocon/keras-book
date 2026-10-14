@@ -1,0 +1,30 @@
+3-D query: ValueError: `dot_product_attention` only supports 4D inputs. Received: query.shape=(1, 5, 8), key.shape=(1, 5, 8), value.shape=(1, 5, 8).
+mask equals -1e9 bias: True
+mean largest weight: default scale 0.659  scale=1.0 0.896
+scale=1.0 changes output: True
+is_causal: positions 0-3 unchanged: True
+flash_attention=True on CPU: ValueError: Flash attention is not supported in tensorflow backend.
+attn_logits_soft_cap=1.0: ValueError: attn_logits_soft_cap is only supported for JAX on TPU. Set attn_logits_soft_cap=None when not using JAX on TPU.
+MHA 2x8 on 16: params 1088
+key_dim 3: output (1, 6, 16) params 418
+value_dim 4: params 824
+output_shape 4: (1, 6, 4)
+use_gate params: 1360
+use_bias False params: 1024
+flash_attention True ctor+call: ValueError: Exception encountered when calling MultiHeadAttention.call().
+sliding_window None positions moved by token 4: [0, 1, 2, 3, 4, 5]
+sliding_window 1 positions moved by token 4: [4]
+sliding_window 2 positions moved by token 4: [3, 4, 5]
+dropout: inference stable True  training differs True
+key None equals key=value: True
+value_mask: weight on last 2 keys 0.0
+attention_mask: weight on key 0 0.0
+query 6, value 9: out (1, 6, 16) scores (1, 2, 6, 9)
+query_mask accepted: (1, 6, 16)
+row variance 0.0019971197471022606
+LN default eps: output std 0.816
+LN eps 1e-6: output std 1.0
+LN {} params 32
+LN {'center': False} params 16
+LN {'scale': False} params 16
+LN axis [1,2] params 192 gamma shape (6, 16)

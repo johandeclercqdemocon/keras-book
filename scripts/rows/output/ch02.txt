@@ -1,0 +1,19 @@
+list int: <dtype: 'int32'> list float: <dtype: 'float32'> np float64: <dtype: 'float64'>
+convert_to_tensor [1.7] int32 [1]
+convert_to_tensor [300] uint8 [44]
+cast 1.7,-1.7 int32: [ 1 -1]
+cast bad dtype: ValueError: Invalid dtype: abc
+convert_to_numpy writeable: True owns: True
+tensor after numpy write: [1. 2.]
+normal default dtype: <dtype: 'float32'>
+mean/std: 5.002 1.999
+normal shape=3: InvalidArgumentError: {{function_node __wrapped__StatelessRandomNormalV2_device_/job:localhost/replica:0/task:0/device:CPU:0}} shape
+SeedGenerator(None) after same global seed equal: True
+two SeedGenerator(None) equal: False
+SeedGenerator foo: ValueError: Unrecognized keyword arguments: {'foo': 2}
+SeedGenerator name: seed_generator_6 noise
+set_random_seed 1.5 ValueError: Expected `seed` argument to be an integer. Received: seed=1.5 (of type <class 'float'>)
+set_random_seed None ValueError: Expected `seed` argument to be an integer. Received: seed=None (of type <class 'NoneType'>)
+set_random_seed '7' ValueError: Expected `seed` argument to be an integer. Received: seed=7 (of type <class 'str'>)
+set_random_seed -1 ValueError: Seed must be between 0 and 2**32 - 1
+set_random_seed 4294967296 ValueError: Seed must be between 0 and 2**32 - 1

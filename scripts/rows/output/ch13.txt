@@ -1,0 +1,11 @@
+clone weights equal original: False  same layer objects: False
+clone_function=identity: same layer objects: True
+nested default: inner model new object: True  inner conv new: True
+recursive False clone_function saw: ['base', 'dense']
+recursive True clone_function saw: ['conv2d', 'global_max_pooling2d', 'dense']
+clone_model foo: ValueError: Unexpected keyword argument(s): ('foo',)
+get_weights: types ['ndarray'] count 2 shapes [(3, 3, 1, 4), (4,)]
+editing the returned array changed the model: False
+set_weights too short ValueError: You called `set_weights(weights)` on layer 'base' with a weight list of length 1, but the layer was expecting 2 weights.
+set_weights wrong shape ValueError: Layer base weight shape (3, 3, 1, 4) is not compatible with provided weight shape (3, 3, 1, 5).
+set_weights too long ValueError: You called `set_weights(weights)` on layer 'base' with a weight list of length 3, but the layer was expecting 2 weights.

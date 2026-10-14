@@ -1,0 +1,15 @@
+axis -1 mean shape (1, 64)
+axis None mean shape (1, 1)
+mean only: ValueError: When setting values directly, both `mean` and `variance` must be set. Received: mean=3.0 and variance=None
+fixed mean 2 var 4 on [4.]: [[1.]]
+invert round trip max error: 9.5367431640625e-07
+adapt twice mean: 11.0
+adapt on (x, y) dataset: accepted, mean shape (1, 64)
+adapt on x-only dataset ok, mean shape (1, 64)
+PyDataset without super().__init__: fit ok, warnings ['Your `PyDataset` class should call `super().__init__(**kwargs)` in its constructor. `**kwa']
+PyDataset foo: TypeError: PyDataset.__init__() got an unexpected keyword argument 'foo'
+to_categorical [0,2]: (2, 3)  num_classes=10: (2, 10)
+to_categorical too small: IndexError: index 5 is out of bounds for axis 1 with size 3
+to_categorical dtype: float64
+to_categorical [-1]: [[0. 0. 1.]
+ [0. 1. 0.]]

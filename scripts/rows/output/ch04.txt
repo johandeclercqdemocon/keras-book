@@ -1,0 +1,11 @@
+positional: 10 keywords: m
+['inputs'] ValueError: Unrecognized keyword arguments passed to Model: {'inputs': <KerasTensor shape=(None, 4), dtype=float32, sparse=False, ra
+dict_keys(['inputs', 'outputs', 'foo']) accepted
+third positional: TypeError: Layer.__init__() takes 1 positional argument but 4 were given
+Model() empty: Model False
+concat -1: (None, 16)
+concat (8),(3): (None, 11)
+concat axis 0: ValueError: A `Concatenate` layer requires inputs with matching shapes except for the concatenation axis. Received: input_shape=[(No
+concat axis=1 (2,5),(3,5): (None, 5, 5)
+axis -1 mismatch: ValueError: A `Concatenate` layer requires inputs with matching shapes except for the concatenation axis. Received: input_shape=[(No
+one input accepted

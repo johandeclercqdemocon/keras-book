@@ -1,0 +1,22 @@
+data_format channels_first on (8,8,1): ValueError: Computed output size would be zero or negative. Received `inputs shape=(None, 8, 8, 1)`, `kernel shape=(3, 3, 8, 16)`, `dilation_r
+dilation_rate 2: (None, 4, 4, 16) params 160
+groups 2 on 1 channel: ValueError: The number of input channels must be evenly divisible by the number of groups. Received groups=2, but the input has 1 channels (fu
+groups 1 on 4 ch: (None, 6, 6, 16) params 592  groups 2 on 4 ch: (None, 6, 6, 16) params 304
+padding causal: ValueError: The `padding` argument must be a list/tuple or one of {'valid', 'same'}. Received: causal
+strides 2 valid: (None, 3, 3, 16) params 160
+dil+stride: ValueError: `strides > 1` not supported in conjunction with `dilation_rate > 1`. Received: strides=(2, 2) and dilation_rate=(2, 2)
+kernel_size 9 valid on 8x8: ValueError: Computed output size would be zero or negative. Received `inputs shape=(None, 8, 8, 1)`, `kernel shape=(9, 9, 1, 16)`, `dilation_r
+maxpool 2 on 7x7: (None, 3, 3, 16) params 0  strides 1: (None, 6, 6, 16) params 0  same: (None, 4, 4, 16) params 0
+maxpool 3 on 8x8 default strides: (None, 2, 2, 1) params 0
+global keepdims: (None, 1, 1, 16) params 0  default: (None, 16) params 0
+global channels_first on (7,7,16): (None, 7) params 0
+fill {'fill_mode': 'reflect'} mean ink 0.3023 orig 0.3019
+fill {'fill_mode': 'constant'} mean ink 0.2639 orig 0.3019
+fill {'fill_mode': 'constant', 'fill_value': 0.5} mean ink 0.3755 orig 0.3019
+fill {'fill_mode': 'nearest'} mean ink 0.2981 orig 0.3019
+0.125 bilinear: share of non-grid values 0.6975
+0.125 nearest: share of non-grid values 0.0
+inference unchanged: False
+factor 1.5: ValueError: The `factor` argument should be a number (or a list of two numbers) in the range [-1.0, 1.0]. Received: input_number=1.5
+same seed equal: True
+pixel max of digits images: 1.0

@@ -1,14 +1,13 @@
 """Audit the prose of each chapter against the book's own outputs.
 
     python3 scripts/audit_numbers.py            # numbers in prose that no output, code or exercise contains
-    python3 scripts/audit_numbers.py --tables   # parameter tables against the printed signatures
 
 Numbers: every number in prose (outside code fences and inline code) must appear in an output block, a code
 block, or the chapter's exercises and solutions. A number that appears nowhere is printed with its
 sentence, and a person decides: derived (check the arithmetic), copied wrong (fix it), or invented (delete).
 
-Tables: a row such as | `fit(batch_size)` | `None` | ... | is checked against the signature that the chapter
-printed. The parameter must exist, and its default must be the printed default.
+The parameter tables are not audited here. `scripts/check_snippets.py` checks them: each `####` block must have the
+real signature, and one row with the real default for each parameter.
 """
 from __future__ import annotations
 
@@ -64,52 +63,6 @@ def audit_numbers():
     return problems
 
 
-def printed_signatures(text):
-    """Signature lines printed by `show(...)` blocks: the text block that follows a python block with show(."""
-    joined = []
-    for match in re.finditer(r"```python\n(.*?)```\s*```text\n(.*?)```", text, re.S):
-        if "show(" in match.group(1):
-            joined.append(re.sub(r"\n\s+", " ", match.group(2)))
-    return "\n".join(joined)
-
-
-def audit_tables():
-    problems = 0
-    row = re.compile(r"^\|\s*`([A-Za-z_.]+)\(([^`]*)\)`[^|]*\|\s*([^|]*?)\s*\|", re.M)
-    for chapter in chapter_files():
-        text = chapter.read_text(encoding="utf-8")
-        signatures = printed_signatures(text)
-        if not signatures:
-            continue
-        for name, params, default in row.findall(text):
-            function = name.split(".")[-1]
-            found = re.search(rf"(?:^|[\s.]){re.escape(function)}\((.*)$", signatures, re.M)
-            if not found:
-                continue          # a method that the reader writes (call, update_state): no printed signature
-            body = found.group(1)
-            for param in [p.strip() for p in params.split(",") if p.strip()]:
-                param = param.split("=")[0].strip()
-                if not re.fullmatch(r"[A-Za-z_]\w*", param):
-                    continue
-                match = re.search(rf"(?:^|[(,\s]){re.escape(param)}(?::\s*\w+)?(?:\s*=\s*([^,)]+|\([^)]*\)))?(?=[,)]|$)", body)
-                if not match:
-                    problems += 1
-                    print(f"{chapter.name}: {name}({param}) is not in the printed signature of {function}")
-                    continue
-                printed = match.group(1)
-                wanted = default.strip("` ").strip("'")
-                if wanted in ("—", "") or wanted.startswith("all `None"):
-                    continue
-                if wanted == "required":
-                    if printed is not None:
-                        problems += 1
-                        print(f"{chapter.name}: {name}({param}) is marked required, the signature has {printed}")
-                elif printed is None or printed.strip("'") != wanted:
-                    problems += 1
-                    print(f"{chapter.name}: {name}({param}) says {wanted!r}, the signature prints {printed!r}")
-    return problems
-
-
 if __name__ == "__main__":
-    count = audit_tables() if "--tables" in sys.argv else audit_numbers()
+    count = audit_numbers()
     print(f"\n{count} item(s) for review.")

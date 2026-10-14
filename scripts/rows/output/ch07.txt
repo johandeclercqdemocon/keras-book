@@ -1,0 +1,20 @@
+ES patience=0 default: epochs run 29 
+ES patience=5: epochs run 36 
+ES patience=5 min_delta=0.01: epochs run 23 
+ES typo val_los ValueError: EarlyStopping callback received monitor=val_los, but Keras isn't able to automatically determine whether that metric should be max
+ES baseline 0.1 patience 5: epochs run 29 
+ES start_from_epoch=20 patience 0: epochs run 29 
+ES monitor val_top1 auto: epochs run 17 best epoch by max 12 []
+ES val_accuracy auto: epochs 17 argmax 12
+MC m.h5 {} ok, exists True
+MC m.keras {'save_weights_only': True} ValueError: When using `save_weights_only=True` in `ModelCheckpoint`, the filepath provided must end in `.weights.h5` (Keras weights format). 
+MC w.weights.h5 {'save_weights_only': True} ok, exists True
+MC formatted files: ['e01.keras', 'e02.keras', 'e03.keras']
+MC threshold 0.1 file exists: False
+MC save_freq=7 exists: True
+RLROP {'epsilon': 0.0001} accepted []
+RLROP {'foo': 1} accepted []
+RLROP defaults factor/patience: 0.1 10
+RLROP patience1 factor .5 lr: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+RLROP + cooldown 3 lr: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+TerminateOnNaN raise_error=True: RuntimeError: NaN or Inf loss encountered at batch 3. Loss value: inf. Terminating training immediately.

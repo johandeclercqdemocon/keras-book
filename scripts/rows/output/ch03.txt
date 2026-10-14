@@ -1,0 +1,28 @@
+name: my_dense
+Layer foo: ValueError: Unrecognized keyword arguments passed to Layer: {'foo': 1}
+activity L2 on ones(1,4): [0.04]
+dtype float64: kernel float64 out <dtype: 'float64'>
+autocast default, float64 input -> out <dtype: 'float32'>
+autocast=False float64 input: InvalidArgumentError: Exception encountered when calling MyDense.call().
+add_weight positional: shape (2,) dtype float32 path w/variable min 1.0000 max 1.0000
+add_weight noshape: shape () dtype float32 path w_1/w min -0.5339 max -0.5339
+add_weight noinit: shape (200, 300) dtype float32 path w_2/variable_1 min -0.1095 max 0.1095
+add_weight noname: shape (2,) dtype float32 path w_3/variable_2 min -0.6781 max -0.4649
+add_weight int: shape (3,) dtype int32 path w_4/variable_3 min 0.0000 max 0.0000
+glorot limit for (200,300): 0.1095
+constraint NonNeg weight after fit: [0. 0. 0.]
+build saw (direct call): (2, 4)
+build saw (in model): (None, 4)
+BN params total/trainable: 16 2 2
+momentum 0.99: moving_mean after 1 steps: 0.050 (data mean 5.018)
+momentum 0.99: moving_mean after 100 steps: 3.181 (data mean 5.018)
+momentum 0.99: moving_mean after 460 steps: 4.968 (data mean 5.018)
+after 10 steps: inference output mean 4.52 training output mean -0.0
+momentum 0.9, 10 steps moving_mean: 3.268
+axis=0 weights shape: (64,)
+axis=0 then batch 32: ValueError: Input 0 with name 'None' of layer 'batch_normalization_6' is incompatible with the layer: expected axis 0 of input shape
+{'center': False} trainable ['gamma'] non-trainable ['moving_mean', 'moving_variance']
+{'scale': False} trainable ['beta'] non-trainable ['moving_mean', 'moving_variance']
+{'renorm': True} trainable ['gamma', 'beta'] non-trainable ['moving_mean', 'moving_variance', 'moving_stddev', 'renorm_mean', 'renorm_stddev']
+constant feature, training output: 0.0
+BN foo: ValueError: Unrecognized keyword arguments passed to BatchNormalization: {'foo': 1}

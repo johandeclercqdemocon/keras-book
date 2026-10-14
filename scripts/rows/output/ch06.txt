@@ -1,0 +1,23 @@
+reduction None shape: (8,) mean 2.6698 sum 21.3582
+default: 2.6698 sum: 21.3582
+ignore_class=0: 2.8243 mean over the 5 others: 2.8243 sum/8: 1.7652
+name: sparse_categorical_crossentropy
+SGD 0.1 nesterov m0.9 epoch1 0.916 epoch10 0.973
+SGD 0.1 momentum 0.9 epoch1 0.913 epoch10 0.96
+SGD weight_decay None kernel norm 9.967 val acc 0.962
+SGD weight_decay 0.1 kernel norm 2.643 val acc 0.751
+use_ema val acc 0.962 evaluate after fit 0.949
+gradient_accumulation_steps=4, 1 epoch of 43 batches: iterations 10
+plain: iterations 43
+SGD {'lr': 0.1} ValueError: Argument(s) not recognized: {'lr': 0.1}
+SGD {'foo': 1} ValueError: Argument(s) not recognized: {'foo': 1}
+Adam default epoch1 0.693 epoch10 0.951
+Adam beta_1=0 epoch1 0.658 epoch10 0.951
+Adam epsilon=1.0 epoch1 0.078 epoch10 0.098
+Adam amsgrad epoch1 0.693 epoch10 0.951
+cosine 0,100,200: [0.01, 0.0, 0.0]
+alpha 0.1 at 100, 200: [0.001, 0.001]
+warmup 0,10,20,120: [0.001, 0.0055, 0.01, 0.005, 0.0]
+warmup_steps without target: [0.001, 0.00098, 0.0009, 0.0]
+{'val_accuracy': 0.9511, 'val_loss': 0.2607, 'val_sparse_top_k_categorical_accuracy': 0.9956, 'val_top1': 0.9511}
+to_categorical [-1, 1] num_classes 3: [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0]]

@@ -1,0 +1,30 @@
+Embedding id 10 of 10: InvalidArgumentError: Exception encountered when calling Embedding.call().
+Embedding id -1: [[[0.04271699 0.03990061 0.02391979 0.03530505]]]
+uniform init min/max: -0.05 0.05
+Embedding weights=[ones]: [[[1.0, 1.0]]]
+Embedding input_length=5: <Embedding name=embedding_3, built=False>
+mask: [[True, False, True]]
+return_sequences: (2, 5, 32) default: (2, 32)
+return_state: list of 2 output == state: True
+go_backwards differs from forward: True  equals forward on reversed input: True
+go_backwards sequences in reversed time order: True
+reset_after True params 4800
+reset_after False params 4704
+stateful without fixed batch: ValueError: When using `stateful=True` in a RNN, the batch size must be static. Found dynamic batch size: sequence.shape=(None, 5, 16)
+stateful: second call differs: True
+use_cudnn=True on CPU: ValueError: Exception encountered when calling GRU.call().
+dropout inference deterministic: True  training differs: True
+GRU activation relu ok: (2, 32)
+causal: shape (1, 10, 2) outputs before step 7 unchanged: True step 7 changed: True
+same: output at step 6 changed by step 7: True
+valid len: (1, 8, 2)  dilation 2: (1, 6, 2)  strides 2: (1, 4, 2)
+max_tokens=5 vocab: ['', '[UNK]', np.str_('the'), np.str_('sat'), np.str_('cat')]
+standardize default 'The Cat!': ['', '[UNK]', np.str_('the'), np.str_('cat')]
+standardize None: ['', '[UNK]', np.str_('The'), np.str_('Cat!')]
+split character: ['', '[UNK]', np.str_('c'), np.str_('b'), np.str_('a')]
+ngrams 2 vocab size: 17 vs 9
+multi_hot shape: (1, 8)
+no output_sequence_length: batch lengths (1, 2) (1, 6)
+vocabulary given: ['', '[UNK]', np.str_('cat'), np.str_('dog')] [[3, 2, 1]]
+ragged type: RaggedTensor
+output_sequence_length with multi_hot: ValueError: `output_sequence_length` must not be set if `output_mode` is not 'int'. Received output_sequence_length=4.

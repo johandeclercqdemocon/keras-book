@@ -1,0 +1,5 @@
+fresh predict steps=1: (64, 1)  batch_size=16 steps=1: (16, 1)
+rank-1 predict: (2, 1)
+then predict {} ValueError: [1mCannot take the length of shape with unknown rank.[0m
+then predict {'steps': 1} ValueError: [1mCannot take the length of shape with unknown rank.[0m
+3 rows then 64 rows: (64, 1)

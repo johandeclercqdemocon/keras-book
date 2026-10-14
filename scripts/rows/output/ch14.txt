@@ -1,0 +1,23 @@
+save no suffix: ValueError: Invalid filepath extension for saving. Please add either a `.keras` extension for the native Keras format (recommended) or a `.h5` extension. Use `mod
+save .h5: True
+save save_format=tf: accepted warnings: ["__array__ implementation doesn't accept a copy keyword, so passing copy=False failed. __array__ must", "__array__ implementation doesn't accept a copy keyword, so passing copy=False failed. __array__ must"] file: True
+overwrite default: no question, file rewritten
+[WARNING] /tmp/tmpeh80mo2j/a.keras already exists - overwrite? [y/n]overwrite=False on an existing file, no terminal: EOFError: EOF when reading a line
+zipped=False: ValueError: When using `zipped=False`, the `filepath` argument should not end in `.keras`. Received: filepath=/tmp/tmpeh80mo2j/unzipped.keras
+zipped=False no suffix: (True, ['assets', 'config.json', 'metadata.json', 'model.weights.h5'])
+compile=False: compiled False has optimizer attr False
+fit after compile=False: ValueError: You must call `compile()` before using the model.
+load Lambda safe_mode=True: ValueError: Requested the deserialization of a `Lambda` layer whose `function` is a Python lambda. This carries a potential risk of arbitrary code execution and t
+load Lambda safe_mode=False: Lambda
+save_weights .h5: ValueError: The filename must end in `.weights.h5`. Received: filepath=/tmp/tmpeh80mo2j/w.h5
+save_weights ok: True
+max_shard_size tiny: ['s.weights.json', 's_00000.weights.h5', 's_00001.weights.h5']
+load_weights mismatch: ValueError: A total of 1 objects could not be loaded. Example error message for object <Dense name=dense_4, built=True>:
+load_weights skip_mismatch: True
+load_weights .keras file: ok
+export onnx: ModuleNotFoundError: No module named 'onnx'
+export bad format: ValueError: Unrecognized format=xyz. Supported formats are: ['tf_saved_model', 'onnx', 'openvino', 'litert', 'torch'].
+export verbose=None printed lines: 9
+export verbose=False printed lines: 0
+registered names: Custom>Twice book>double
+register same name twice: False

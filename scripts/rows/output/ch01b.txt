@@ -1,0 +1,16 @@
+evaluate list: [2.301933765411377, 1.2412068843841553]
+evaluate dict: {'loss': 2.301933765411377, 'mae': 1.2412068843841553}
+evaluate foo=1: ValueError: Arguments not recognized: {'foo': 1}
+evaluate steps=1 bs=16: [0.31379562616348267, 0.4824135899543762] first 16 only: [0.31379562616348267, 0.4824135899543762]
+print_fn calls: 1 'Model: "sequential"\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━'
+Model: "sequential"
+┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━┓
+┃ Layer (type)          ┃ Output Shape     ┃ Param # ┃ Tr… ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━┩
+│ dense (Dense)         │ (None, 1)        │       2 │  Y  │
+└───────────────────────┴──────────────────┴─────────┴─────┘
+ Total params: 2 (8.00 B)
+ Trainable params: 2 (8.00 B)
+ Non-trainable params: 0 (0.00 B)
+
+default width: 76

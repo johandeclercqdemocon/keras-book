@@ -1,0 +1,4 @@
+direct call, no training arg, changed: True
+direct call, training=False, changed: False
+model.predict changed: False
+model(x) no training arg changed: True
