@@ -236,17 +236,6 @@ def block_6():
     print("equal to model.predict:", bool(np.allclose(result["output_0"].numpy(), expected, atol=1e-5)))
 
 
-# ---- block 7 --------------------------------------------------
-def block_7():
-    import keras
-    from examples.signatures import show
-
-    show(("Model.save", keras.Model.save), ("saving.load_model", keras.saving.load_model),
-         ("Model.save_weights", keras.Model.save_weights), ("Model.load_weights", keras.Model.load_weights),
-         ("Model.export", keras.Model.export),
-         ("saving.register_keras_serializable", keras.saving.register_keras_serializable))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -261,5 +250,3 @@ if __name__ == "__main__":
     block_5()
     print('--- block 6')
     block_6()
-    print('--- block 7')
-    block_7()

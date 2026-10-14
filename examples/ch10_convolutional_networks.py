@@ -119,14 +119,6 @@ def block_4():
     print("multiplications for this image:", output.size * 3 * 3 * 1)
 
 
-# ---- block 5 --------------------------------------------------
-def block_5():
-    from keras import layers
-    from examples.signatures import show
-
-    show(layers.Conv2D, layers.MaxPooling2D, layers.GlobalMaxPooling2D, layers.RandomTranslation)
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -137,5 +129,3 @@ if __name__ == "__main__":
     block_3()
     print('--- block 4')
     block_4()
-    print('--- block 5')
-    block_5()

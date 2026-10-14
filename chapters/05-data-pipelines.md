@@ -75,7 +75,7 @@ shuffled         train accuracy 0.945  validation accuracy 0.904
 
 With sorted rows, the validation set holds the last classes. The model never saw them in training, so it scores close to zero. The training accuracy is high and the validation accuracy is near zero. This looks like extreme overfitting. It is a pipeline fault.
 
-Shuffle the rows before you call `fit` with `validation_split`. Better, make the validation set yourself with a stratified split, as `examples/digits.py` does.
+The loss `SparseCategoricalCrossentropy` has its block in [Chapter 6](06-losses-metrics-optimizers.md). Shuffle the rows before you call `fit` with `validation_split`. Better, make the validation set yourself with a stratified split, as `examples/digits.py` does. The `fit` block of [Chapter 1](01-the-first-model.md) explains `validation_split` and the other parameters of `fit`.
 
 ## The scale of the input
 
@@ -122,6 +122,42 @@ Adam(0.001)  raw 0.962  divide by 16 0.951  Normalization 0.958
 Read the table by rows. For SGD, raw pixels give an accuracy of 0.296 and both scaled versions give 0.96. For Adam, all three are between 0.951 and 0.962. The test set has 450 images, and one image is 0.0022. The three Adam results differ by 5 images at most, so Adam shows no effect of scale here.
 
 The reason is how the two optimizers use the gradient. SGD steps by the gradient, so a large input gives a large step. Adam divides each step by a running estimate of the size of the gradient, so it removes most of the scale. Adam hides the scale problem. It does not remove it. A model with a different layer, a different loss or a different optimizer can show it again.
+
+#### `keras.layers.Normalization`
+
+```text
+keras.layers.Normalization(
+    axis=-1,
+    mean=None,
+    variance=None,
+    invert=False,
+    **kwargs,
+)
+```
+
+The layer computes `(x - mean) / sqrt(variance)` for each feature. The statistics come from `adapt` or from the arguments.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `axis` | `-1` | the axis that keeps its own statistics | the default gives one mean for each of the 64 pixels. `axis=None` gives one mean for all of them |
+| `mean` | `None` | a fixed mean, so that no `adapt` is necessary | `mean` without `variance` raises `ValueError: When setting values directly, both mean and variance must be set` |
+| `variance` | `None` | a fixed variance | with `mean=2.0` and `variance=4.0`, the input 4.0 gave 1.0 |
+| `invert` | `False` | compute the inverse map, `x * sqrt(variance) + mean` | — (an adapted inverse layer gave back the test pixels with a largest error of 9.5e-07) |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+
+#### `keras.layers.Normalization.adapt`
+
+```text
+keras.layers.Normalization.adapt(
+    data,
+)
+```
+
+The method makes one pass over the data and stores the mean, the variance and the count of each feature.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `data` | required | an array, a tensor or a `tf.data.Dataset` | a constant pixel gives 10,000,000 on test data (next section). A second `adapt` replaces the statistics and does not add to them: `adapt` on `[0, 2]`, then on `[10, 12]`, gave the mean 11.0. A dataset of `(x, y)` pairs is accepted, and the layer uses only `x` |
 
 ## A constant pixel can explode
 
@@ -231,6 +267,26 @@ warning: `shuffle=True` was passed, but will be ignored since the data
 
 The three accuracies are within 0.007 of each other, which is 3 images of 450. The pipelines are equal for this purpose. The last batch of the `PyDataset` has 3 images, because 1,347 is not a multiple of 32. Keras uses the short batch.
 
+#### `keras.utils.PyDataset`
+
+```text
+keras.utils.PyDataset(
+    workers=1,
+    use_multiprocessing=False,
+    max_queue_size=10,
+)
+```
+
+The class is the base of a Python data source for `fit`. A subclass defines `__len__` and `__getitem__`, and it can define `on_epoch_end`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `workers` | `1` | the number of threads or processes that load batches | — |
+| `use_multiprocessing` | `False` | use processes and not threads for the workers | — |
+| `max_queue_size` | `10` | the number of batches that wait in the queue | — |
+
+A subclass must pass its `**kwargs` to `super().__init__`. Without that call, `fit` still ran, and it wrote the warning "Your PyDataset class should call super().__init__(**kwargs) in its constructor". An unknown keyword such as `foo=1` raises `TypeError` in the base class.
+
 The warning is useful. `fit` shuffles arrays by default, with `shuffle=True`. It cannot shuffle a `tf.data.Dataset`, so it ignores the argument and says so. The pipeline must shuffle for itself, with `.shuffle(buffer_size)`. A pipeline without a shuffle sends the batches in file order in every epoch.
 
 ## How it works
@@ -275,40 +331,13 @@ Two consequences follow. Adapt on the training set only, or the test set leaks i
 
 ## Reference
 
-```python
-import keras
-from keras import layers
-from examples.signatures import show
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.layers.Normalization` | The scale of the input | `(x - mean) / sqrt(variance)` for each feature |
+| `keras.layers.Normalization.adapt` | The scale of the input | one pass that replaces the stored statistics |
+| `keras.utils.PyDataset` | Three ways to feed `fit` | a Python data source with `__len__` and `__getitem__` |
 
-show(layers.Normalization, ("Normalization.adapt", layers.Normalization.adapt),
-     ("PyDataset", keras.utils.PyDataset.__init__), ("utils.to_categorical", keras.utils.to_categorical),
-     ("Model.fit", keras.Model.fit))
-```
-
-```text
-Normalization(axis=-1, mean=None, variance=None, invert=False, **kwargs)
-Normalization.adapt(data)
-PyDataset(workers=1, use_multiprocessing=False, max_queue_size=10)
-utils.to_categorical(x, num_classes=None)
-Model.fit(x=None, y=None, batch_size=None, epochs=1, verbose='auto',
-    callbacks=None, validation_split=0.0, validation_data=None, shuffle=True,
-    class_weight=None, sample_weight=None, initial_epoch=0,
-    steps_per_epoch=None, validation_steps=None, validation_batch_size=None,
-    validation_freq=1)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `Normalization(axis)` | `-1` | the axis that keeps its own statistics | the default gives one mean for each pixel here |
-| `Normalization(mean, variance)` | `None` | fixed statistics, so no `adapt` is needed | — |
-| `adapt(data)` | required | computes mean, variance and count | a constant pixel gives 1e7 on test data |
-| `PyDataset(workers)` | `1` | worker threads or processes for loading | — |
-| `PyDataset(max_queue_size)` | `10` | batches that wait in the queue | — |
-| `fit(validation_split)` | `0.0` | fraction of the last rows held back | sorted rows gave a validation accuracy of 0.015 |
-| `fit(shuffle)` | `True` | shuffle each epoch | ignored for `tf.data.Dataset` |
-| `to_categorical(num_classes)` | `None` | width of the one-hot vector | `None` takes the largest label plus 1 |
-
-A `PyDataset` subclass must define `__len__` and `__getitem__`. It can define `on_epoch_end`. The base class takes only the three loading arguments that the table lists.
+`keras.Model.fit` is in [Chapter 1](01-the-first-model.md). `keras.utils.to_categorical` is in [Chapter 6](06-losses-metrics-optimizers.md), where the book first uses it.
 
 ## What you have now
 

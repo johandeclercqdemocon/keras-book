@@ -246,17 +246,6 @@ def block_9():
         print("a built Dense with a new width:", str(error).splitlines()[0][:70])
 
 
-# ---- block 10 --------------------------------------------------
-def block_10():
-    import keras
-    from keras import layers
-    from examples.signatures import show
-
-    show(("Layer", keras.layers.Layer.__init__), ("Layer.add_weight", keras.layers.Layer.add_weight),
-         ("Layer.build", keras.layers.Layer.build), ("Layer.get_config", keras.layers.Layer.get_config),
-         layers.BatchNormalization)
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -277,5 +266,3 @@ if __name__ == "__main__":
     block_8()
     print('--- block 9')
     block_9()
-    print('--- block 10')
-    block_10()

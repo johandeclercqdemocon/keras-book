@@ -155,15 +155,6 @@ def block_5():
     print("after a call with 10 tokens instead of 6:", layer.count_params())
 
 
-# ---- block 6 --------------------------------------------------
-def block_6():
-    from keras import layers, ops
-    from examples.signatures import show
-
-    show(layers.MultiHeadAttention, ("MultiHeadAttention.call", layers.MultiHeadAttention.call),
-         layers.LayerNormalization, ("ops.dot_product_attention", ops.dot_product_attention))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -176,5 +167,3 @@ if __name__ == "__main__":
     block_4()
     print('--- block 5')
     block_5()
-    print('--- block 6')
-    block_6()

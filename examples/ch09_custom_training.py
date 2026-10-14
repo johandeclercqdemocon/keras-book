@@ -210,16 +210,6 @@ def block_6():
     print("SGD with gradient 50.0: weight moved by", round(1.0 - float(ops.convert_to_numpy(weight)[0]), 4))
 
 
-# ---- block 7 --------------------------------------------------
-def block_7():
-    import keras
-    from examples.signatures import show
-
-    show(keras.losses.Loss, keras.metrics.Metric, ("Metric.add_variable", keras.metrics.Metric.add_variable),
-         ("Model.compute_loss", keras.Model.compute_loss), ("Model.compute_metrics", keras.Model.compute_metrics),
-         ("Optimizer.apply", keras.optimizers.Optimizer.apply))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -234,5 +224,3 @@ if __name__ == "__main__":
     block_5()
     print('--- block 6')
     block_6()
-    print('--- block 7')
-    block_7()

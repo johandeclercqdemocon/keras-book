@@ -62,6 +62,8 @@ prediction at x=3: [7.]
 
 The model found the line. The weight is 2, the bias is 1, and the prediction at x = 3 is 7. This is a fit to noise-free data, so the loss can reach zero.
 
+The data are `float32` because the weights of the model are `float32`, the default type of Keras. The call `keras.utils.set_random_seed(0)` fixes the random start values of the weight, so that your run prints the same numbers. `get_weights` returns the weights of a layer as NumPy arrays. [Chapter 3](03-layers-and-weights.md) has its block. [Chapter 2](02-tensors-and-ops.md) explains it. The optimizers `Adam` and `SGD` have their blocks in [Chapter 6](06-losses-metrics-optimizers.md).
+
 ## The five calls
 
 Every Keras program in this book uses the same five calls. The block above contains all of them.
@@ -72,7 +74,223 @@ Every Keras program in this book uses the same five calls. The block above conta
 4. `model.compile(optimizer=..., loss=...)` chooses how to learn. It does not change the weights.
 5. `model.fit(x, y, ...)` runs the training loop and returns a `History` object.
 
+The five calls have the signatures that follow. Each table has one row for each parameter. The last column gives a result that a run of this book measured, or `—` when no run measured one.
+
+#### `keras.Input`
+
+```text
+keras.Input(
+    shape=None,
+    batch_size=None,
+    dtype=None,
+    sparse=None,
+    ragged=None,
+    batch_shape=None,
+    name=None,
+    tensor=None,
+    optional=False,
+)
+```
+
+The function returns a symbolic tensor that describes one input of the model.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `shape` | `None` | the shape of one sample, without the batch axis | a rank-1 array of 64 numbers is accepted for `shape=(1,)`. Keras adds the axis (this chapter) |
+| `batch_size` | `None` | a fixed batch size | `Input((1,), batch_size=16)` still accepted `fit` with `batch_size=32`, with no error |
+| `dtype` | `None` | the type of the input. With `None`, the default float type, `float32` | with `dtype="int32"`, the input 0.7 becomes 0, and the prediction is 0.0 |
+| `sparse` | `None` | accept sparse tensors. TensorFlow and JAX back ends only | — |
+| `ragged` | `None` | accept ragged tensors. TensorFlow back end only | — |
+| `batch_shape` | `None` | the shape with the batch axis, such as `(None, 1)` | with `shape` too, it raises `ValueError: You cannot pass both shape and batch_shape at the same time` |
+| `name` | `None` | the name of the input | an unnamed input gets a name such as `keras_tensor_4`, and an exported model shows that name ([Chapter 14](14-saving-loading-export.md)) |
+| `tensor` | `None` | an existing tensor to wrap | — |
+| `optional` | `False` | with `True`, the input accepts `None` | — |
+
+#### `keras.layers.Dense`
+
+```text
+keras.layers.Dense(
+    units,
+    activation=None,
+    use_bias=True,
+    kernel_initializer='glorot_uniform',
+    bias_initializer='zeros',
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    kernel_constraint=None,
+    bias_constraint=None,
+    lora_rank=None,
+    lora_alpha=None,
+    quantization_config=None,
+    **kwargs,
+)
+```
+
+The layer computes `activation(x @ kernel + bias)`. The kernel has the shape `(features, units)`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `units` | required | the number of outputs | — |
+| `activation` | `None` | the function on the output. With `None`, the output is `x @ kernel + bias` | a loss that expects probabilities gets raw scores ([Chapter 6](06-losses-metrics-optimizers.md)) |
+| `use_bias` | `True` | add the bias vector | with `False`, the line model has 1 parameter, and the loss stops at 1.0004 after 100 epochs: it cannot make the offset 1 |
+| `kernel_initializer` | `'glorot_uniform'` | the start values of the kernel | with `'zeros'` in a hidden layer of 4 `tanh` units, the kernel was still `[0, 0, 0, 0]` after 50 epochs. No unit learned |
+| `bias_initializer` | `'zeros'` | the start values of the bias | — |
+| `kernel_regularizer` | `None` | a penalty on the kernel, added to the loss | `L2(0.1)` pulled the weight of the line to 1.5486 and not 2. The reported loss includes the penalty ([Chapter 8](08-overfitting-and-regularization.md)) |
+| `bias_regularizer` | `None` | a penalty on the bias | — |
+| `activity_regularizer` | `None` | a penalty on the output of the layer | — |
+| `kernel_constraint` | `None` | a rule that the kernel must obey after each update | `NonNeg()` on the data y = -2x + 1 kept the weight at 0, and the loss stopped at 1.3767 |
+| `bias_constraint` | `None` | a rule for the bias | — |
+| `lora_rank` | `None` | train two small matrices of this rank, and freeze the kernel | with `lora_rank=2`, a layer from 16 to 8 has 56 trainable and 128 frozen values, against 136 trainable without it |
+| `lora_alpha` | `None` | scale the low-rank update by `lora_alpha / lora_rank` | — |
+| `quantization_config` | `None` | settings to store the weights with fewer bits | — |
+| `**kwargs` | — | the arguments of every layer, such as `name`, `dtype` and `trainable` | a misspelled name raises `ValueError: Unrecognized keyword arguments passed to Dense: {'foo': 1}` |
+
+#### `keras.Sequential`
+
+```text
+keras.Sequential(
+    layers=None,
+    trainable=True,
+    name=None,
+)
+```
+
+The class makes a model from a list of layers. The output of each layer is the input of the next.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `layers` | `None` | the layers, in order | without a `keras.Input`, the model has 0 weights until its first call, and `summary` shows `0 (unbuilt)` |
+| `trainable` | `True` | with `False`, `fit` changes no weight | `fit` runs with no error, and the loss stays at 2.3019 for every epoch |
+| `name` | `None` | the name of the model. With `None`, `sequential`, `sequential_1` and so on | — |
+
+#### `keras.Model.compile`
+
+```text
+keras.Model.compile(
+    optimizer='rmsprop',
+    loss=None,
+    loss_weights=None,
+    metrics=None,
+    weighted_metrics=None,
+    run_eagerly=False,
+    steps_per_execution=1,
+    jit_compile='auto',
+    auto_scale_loss=True,
+)
+```
+
+The method chooses how the model learns. It does not change a weight.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `optimizer` | `'rmsprop'` | the rule that turns a gradient into a step | `SGD(1.5)` gave `nan`, and `Adam(0.001)` was too slow for the line (this chapter) |
+| `loss` | `None` | the number that training makes smaller | with `None`, `fit` raises `ValueError: No loss to compute` |
+| `loss_weights` | `None` | the weight of each loss of a model with several outputs | — |
+| `metrics` | `None` | more numbers to report, such as `["mae"]` | each metric adds a key to `history`: `['loss', 'mae']` |
+| `weighted_metrics` | `None` | metrics that use `sample_weight` | — |
+| `run_eagerly` | `False` | with `True`, run the Python code of each step, with no graph | the first epoch gave the same loss as the graph, 2.2735. The speed was not measured |
+| `steps_per_execution` | `1` | the number of steps in one call of the compiled function | with 4, `on_train_batch_end` ran 1 time in an epoch of 4 steps. The optimizer still made 4 steps |
+| `jit_compile` | `'auto'` | compile the step with XLA | on the TensorFlow CPU setup of this book, `'auto'` became `False` |
+| `auto_scale_loss` | `True` | scale the loss for mixed precision ([Chapter 15](15-performance-and-reproducibility.md)) | — |
+
+#### `keras.Model.fit`
+
+```text
+keras.Model.fit(
+    x=None,
+    y=None,
+    batch_size=None,
+    epochs=1,
+    verbose='auto',
+    callbacks=None,
+    validation_split=0.0,
+    validation_data=None,
+    shuffle=True,
+    class_weight=None,
+    sample_weight=None,
+    initial_epoch=0,
+    steps_per_epoch=None,
+    validation_steps=None,
+    validation_batch_size=None,
+    validation_freq=1,
+)
+```
+
+The method runs the training loop and returns a `History` object.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | `None` | the inputs: an array, a tensor, a `tf.data.Dataset` or a `PyDataset` | — |
+| `y` | `None` | the targets. Leave it out when `x` gives the targets | 10 targets for 64 inputs raise `ValueError: Data cardinality is ambiguous` (this chapter) |
+| `batch_size` | `None` | the samples in one step. With `None`, 32 | 4 steps in one epoch at 16, and 2 at the default (this chapter) |
+| `epochs` | `1` | the number of the last epoch | the number of steps is `epochs × ceil(n / batch_size)` |
+| `verbose` | `'auto'` | 0 is silent, 1 is a progress bar, 2 is one line for each epoch | — |
+| `callbacks` | `None` | objects that Keras calls during training ([Chapter 7](07-callbacks-and-training-control.md)) | — |
+| `validation_split` | `0.0` | the part of the data to keep for validation | it takes the last samples, before any shuffle. With 0.25 on the sorted line data, `val_loss` was 2.1647, the loss of the last 16 samples. The first 16 gave 0.3968 |
+| `validation_data` | `None` | a separate `(x, y)` for validation | with `validation_split` too, `validation_data` wins: `val_loss` was the loss on `validation_data` |
+| `shuffle` | `True` | shuffle the arrays at each epoch | it has no effect on a `tf.data.Dataset` ([Chapter 5](05-data-pipelines.md)) |
+| `class_weight` | `None` | a weight for each class, as a dict | — |
+| `sample_weight` | `None` | a weight for each sample | the 32 samples with x > 0 got y = 10 and the weight 0. `fit` found w = 2.0 and b = 1.0. With no weights it found w = 7.65 and b = 4.99 |
+| `initial_epoch` | `0` | the number of the first epoch | with `initial_epoch=3` and `epochs=5`, `fit` runs 2 epochs, numbered 3 and 4 |
+| `steps_per_epoch` | `None` | the steps in one epoch. With `None`, all the batches | with 2, two epochs made 4 updates and not 8 |
+| `validation_steps` | `None` | the batches of validation data for each check | — |
+| `validation_batch_size` | `None` | the batch size of the validation data | — |
+| `validation_freq` | `1` | check the validation data every `n` epochs | with 2, 4 epochs gave 4 values of `loss` and 2 of `val_loss` |
+
 Two more calls read the result. `model.evaluate(x, y)` returns the loss on data. `model.predict(x)` returns the output of the model. Both calls work on batches, so the input must have a batch axis as its first axis.
+
+#### `keras.Model.predict`
+
+```text
+keras.Model.predict(
+    x,
+    batch_size=None,
+    verbose='auto',
+    steps=None,
+    callbacks=None,
+)
+```
+
+The method returns the output of the model for each sample, as a NumPy array.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | the inputs, with the batch axis first | a rank-1 array gave shape `(2, 1)`. After this call, every later `predict` of the same model raised `ValueError: Cannot take the length of shape with unknown rank`, also with the correct shape |
+| `batch_size` | `None` | the samples in one forward pass. With `None`, 32 | — |
+| `verbose` | `'auto'` | the progress output | — |
+| `steps` | `None` | the number of batches to predict | with `batch_size=16` and `steps=1`, 16 of 64 rows. With `batch_size=None` and `steps=1`, all 64 rows |
+| `callbacks` | `None` | callbacks during the prediction | — |
+
+#### `keras.Model.evaluate`
+
+```text
+keras.Model.evaluate(
+    x=None,
+    y=None,
+    batch_size=None,
+    verbose='auto',
+    sample_weight=None,
+    steps=None,
+    callbacks=None,
+    return_dict=False,
+    **kwargs,
+)
+```
+
+The method returns the loss, and the metrics of `compile`, on the data.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | `None` | the inputs | — |
+| `y` | `None` | the targets | — |
+| `batch_size` | `None` | the samples in one step. With `None`, 32 | — |
+| `verbose` | `'auto'` | the progress output | — |
+| `sample_weight` | `None` | a weight for each sample | — |
+| `steps` | `None` | the number of batches to use | with `batch_size=16` and `steps=1`, the result is the loss of the first 16 samples only |
+| `callbacks` | `None` | callbacks during the evaluation | — |
+| `return_dict` | `False` | return a dict and not a list | the list has the loss first, then the metrics in the order of `compile`: `[2.3019, 1.2412]` |
+| `**kwargs` | — | no keyword is accepted here | `foo=1` raises `ValueError: Arguments not recognized: {'foo': 1}` |
 
 ## Read the summary
 
@@ -99,6 +317,30 @@ Model: "sequential"
  Trainable params: 2 (8.00 B)
  Non-trainable params: 0 (0.00 B)
 ```
+
+#### `keras.Model.summary`
+
+```text
+keras.Model.summary(
+    line_length=None,
+    positions=None,
+    print_fn=None,
+    expand_nested=False,
+    show_trainable=False,
+    layer_range=None,
+)
+```
+
+The method prints the layers, their output shapes and the count of parameters.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `line_length` | `None` | the width of the table. With `None`, 76 characters for this model | with 60 and `show_trainable=True`, the header `Trainable` is cut to `Tr…` |
+| `positions` | `None` | the relative positions of the columns | — |
+| `print_fn` | `None` | the function that prints. With `None`, `print` | the docstring says that Keras calls it for each line. It called it 1 time, with the whole table in one string |
+| `expand_nested` | `False` | show the layers of a nested model | — |
+| `show_trainable` | `False` | add a column that says if each layer trains | — |
+| `layer_range` | `None` | the first and the last layer to show | — |
 
 The `None` in the output shape is the batch axis. Its size is not fixed. The `Dense` layer has 2 parameters: one kernel value and one bias value. Each is a 32-bit float, so the table reports 8 bytes.
 
@@ -266,56 +508,16 @@ The mechanism explains two results of this chapter. A learning rate of 1.5 gives
 
 ## Reference
 
-The next block prints the signature of each function that this chapter uses. The signatures come from the installed Keras. The text under the block is what the library printed.
-
-```python
-import keras
-from keras import layers
-from examples.signatures import show
-
-show(("Sequential", keras.Sequential.__init__), ("Input", keras.Input), layers.Dense,
-     ("Model.compile", keras.Model.compile), ("Model.fit", keras.Model.fit),
-     ("Model.predict", keras.Model.predict), ("Model.evaluate", keras.Model.evaluate))
-```
-
-```text
-Sequential(layers=None, trainable=True, name=None)
-Input(shape=None, batch_size=None, dtype=None, sparse=None, ragged=None,
-    batch_shape=None, name=None, tensor=None, optional=False)
-Dense(units, activation=None, use_bias=True,
-    kernel_initializer='glorot_uniform', bias_initializer='zeros',
-    kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
-    kernel_constraint=None, bias_constraint=None, lora_rank=None,
-    lora_alpha=None, quantization_config=None, **kwargs)
-Model.compile(optimizer='rmsprop', loss=None, loss_weights=None, metrics=None,
-    weighted_metrics=None, run_eagerly=False, steps_per_execution=1,
-    jit_compile='auto', auto_scale_loss=True)
-Model.fit(x=None, y=None, batch_size=None, epochs=1, verbose='auto',
-    callbacks=None, validation_split=0.0, validation_data=None, shuffle=True,
-    class_weight=None, sample_weight=None, initial_epoch=0,
-    steps_per_epoch=None, validation_steps=None, validation_batch_size=None,
-    validation_freq=1)
-Model.predict(x, batch_size=None, verbose='auto', steps=None, callbacks=None)
-Model.evaluate(x=None, y=None, batch_size=None, verbose='auto',
-    sample_weight=None, steps=None, callbacks=None, return_dict=False,
-    **kwargs)
-```
-
-The parameters that matter most in this chapter:
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `Input(shape)` | `None` | shape of one sample, without the batch axis | a rank-1 array is accepted and Keras adds the axis (Chapter 1) |
-| `Dense(units)` | required | number of outputs; the kernel has shape `(features, units)` | — |
-| `Dense(activation)` | `None` | function applied to the output | `None` gives raw scores, which a loss may need to know about (Chapter 6) |
-| `compile(optimizer)` | `'rmsprop'` | rule that turns a gradient into a step | `SGD(1.5)` gave `nan`; `Adam(0.001)` was too slow for the line (Chapter 1) |
-| `compile(loss)` | `None` | number that training makes smaller | — |
-| `fit(epochs)` | `1` | passes through the data | the number of steps is `epochs × ceil(n / batch_size)` |
-| `fit(batch_size)` | `None` | samples in one step; `None` gives 32 | 4 steps in one epoch at 16, 2 at the default of 32 |
-| `fit(verbose)` | `'auto'` | progress output | — |
-| `fit(shuffle)` | `True` | shuffle the arrays at each epoch | ignored for a `tf.data.Dataset` (Chapter 5) |
-| `predict(batch_size)` | `None` | samples in one forward pass | — |
-| `evaluate(return_dict)` | `False` | return a dictionary and not a list | a list has the loss first, then the metrics in the order of `compile` |
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.Input` | The five calls | the shape of one sample, without the batch axis |
+| `keras.layers.Dense` | The five calls | `activation(x @ kernel + bias)` |
+| `keras.Sequential` | The five calls | a model from a list of layers |
+| `keras.Model.compile` | The five calls | the optimizer, the loss and the metrics. No weight changes |
+| `keras.Model.fit` | The five calls | the training loop. It returns a `History` |
+| `keras.Model.predict` | The five calls | the output for each sample, as a NumPy array |
+| `keras.Model.evaluate` | The five calls | the loss and the metrics on data |
+| `keras.Model.summary` | Read the summary | a table of layers and parameter counts |
 
 ## What you have now
 

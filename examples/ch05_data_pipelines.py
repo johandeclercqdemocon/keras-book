@@ -171,17 +171,6 @@ def block_6():
     print("largest value of the formula:", float(np.abs(by_hand).max()))
 
 
-# ---- block 7 --------------------------------------------------
-def block_7():
-    import keras
-    from keras import layers
-    from examples.signatures import show
-
-    show(layers.Normalization, ("Normalization.adapt", layers.Normalization.adapt),
-         ("PyDataset", keras.utils.PyDataset.__init__), ("utils.to_categorical", keras.utils.to_categorical),
-         ("Model.fit", keras.Model.fit))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -196,5 +185,3 @@ if __name__ == "__main__":
     block_5()
     print('--- block 6')
     block_6()
-    print('--- block 7')
-    block_7()

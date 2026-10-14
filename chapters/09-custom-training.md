@@ -100,6 +100,24 @@ config: 0.2
 
 The class matches the built-in loss with label smoothing on 32 random samples. The method `get_config` matters for saving. A loss class without `get_config` loads, but its arguments return to their defaults ([Chapter 14](14-saving-loading-export.md) measures this).
 
+#### `keras.losses.Loss`
+
+```text
+keras.losses.Loss(
+    name=None,
+    reduction='sum_over_batch_size',
+    dtype=None,
+)
+```
+
+The class is the base of a loss. A subclass writes `call(y_true, y_pred)`, which returns one value for each sample, and passes `**kwargs` to the base.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `name` | `None` | the name. With `None`, the class name in snake case | — (a class `Sq` got the name `sq`) |
+| `reduction` | `'sum_over_batch_size'` | how the values of the samples combine | for the squared errors 1, 4, 9 and 16, the default gave 7.5 and `"sum"` gave 30.0. `None` returns the values of the samples. `"mean"` is also accepted |
+| `dtype` | `None` | the type of the computation | — |
+
 ## A custom metric
 
 A metric keeps state across batches. The loss of an epoch is an average of batch values. A metric such as balanced accuracy cannot be built that way, because it is an average over classes of per-class recall. The metric must keep a count for each class and combine the counts at the end.
@@ -158,6 +176,46 @@ plain accuracy   : 0.89333
 ```
 
 The custom metric agrees with the scikit-learn function to five digits. It also differs from plain accuracy, because the 450 test images are not perfectly balanced across classes. On a data set with a rare class the two numbers can differ much more. Balanced accuracy is the one that shows a model that ignores the rare class.
+
+#### `keras.metrics.Metric`
+
+```text
+keras.metrics.Metric(
+    dtype=None,
+    name=None,
+)
+```
+
+The class is the base of a metric. A subclass writes `update_state`, `result` and `reset_state`, and keeps its state in variables made with `add_variable`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `dtype` | `None` | the type of the state and of the result | — |
+| `name` | `None` | the key in `history`. With `None`, the class name in snake case | — |
+
+A state in a plain Python attribute does not work. A metric that counted the batches in `self.n += 1.0` reported 2.0 for the first epoch and 0.0 for the second. Each epoch had 43 batches. `fit` runs a compiled function, and the Python line runs only while Keras traces it. The same count in a variable from `add_variable` gave 1,347 samples in each epoch, which is correct.
+
+#### `keras.metrics.Metric.add_variable`
+
+```text
+keras.metrics.Metric.add_variable(
+    shape,
+    initializer,
+    dtype=None,
+    aggregation='sum',
+    name=None,
+)
+```
+
+The method creates a variable of the state and tracks it, so that `reset_state` and saving can find it.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `shape` | required | the shape of the state | — |
+| `initializer` | required | the start values, such as `"zeros"` | there is no default, unlike `Layer.add_weight`: without it, the call raises `TypeError: Metric.add_variable() missing 1 required positional argument: 'initializer'` |
+| `dtype` | `None` | the type. With `None`, the type of the metric | — |
+| `aggregation` | `'sum'` | how to combine copies on several devices. The default is `'sum'`, and for a layer weight it is `'none'` | — |
+| `name` | `None` | the name of the variable | — |
 
 ## A custom `train_step`
 
@@ -233,6 +291,68 @@ Two details in the block cost a debugging session each. You must weight the loss
 
 The second detail is the order of layer construction in `make`. [Chapter 15](15-performance-and-reproducibility.md) shows how that order decides the initial weights.
 
+The step used two methods of the model and one method of the optimizer. The built-in step also calls `compute_metrics`.
+
+#### `keras.Model.compute_loss`
+
+```text
+keras.Model.compute_loss(
+    x=None,
+    y=None,
+    y_pred=None,
+    sample_weight=None,
+    training=True,
+)
+```
+
+The method returns the loss of one batch: the loss of `compile` plus the losses of the layers, such as an L2 penalty.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | `None` | the inputs of the batch | — |
+| `y` | `None` | the targets | — |
+| `y_pred` | `None` | the output of the model for `x` | it is not computed for you: without it, the call raises `ValueError: Attempt to convert a value (None) with an unsupported type` |
+| `sample_weight` | `None` | a weight for each sample | the default reduction divides by the batch size, not by the sum of the weights. With the weight 0 on 16 of 32 samples, the cross-entropy part was half the loss of the 16 samples alone |
+| `training` | `True` | the mode of the call | — (with `training=False`, the L2 penalty of 1.674 was still in the loss: 4.2105 in both modes) |
+
+#### `keras.Model.compute_metrics`
+
+```text
+keras.Model.compute_metrics(
+    x,
+    y,
+    y_pred,
+    sample_weight=None,
+)
+```
+
+The method updates the metrics of `compile` with one batch and returns their values as a dict, with the key `loss` first.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | the inputs of the batch | — |
+| `y` | required | the targets | — |
+| `y_pred` | required | the output of the model | — |
+| `sample_weight` | `None` | a weight for each sample | — |
+
+The `loss` value in the dict comes from the loss tracker, and `compute_metrics` does not update it. After a reset of the metrics, the call returned `loss` 0.0 and the correct accuracy.
+
+#### `keras.optimizers.Optimizer.apply`
+
+```text
+keras.optimizers.Optimizer.apply(
+    grads,
+    trainable_variables=None,
+)
+```
+
+The method changes each variable with its gradient and adds 1 to `optimizer.iterations`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `grads` | required | one gradient for each variable, in the same order | a list that is too short is accepted with no error: 1 gradient for 2 variables changed the first variable and left the second at 1.0 |
+| `trainable_variables` | `None` | the variables. With `None`, the variables of the first call | in a first call, `None` raises `ValueError: When passing grads without variables, the optimizer must already be built` |
+
 ## A portable change: override `compute_loss`
 
 A `train_step` that uses `tf.GradientTape` runs on one back end only. If the change that you want is a change of the loss, there is a portable hook. Override `compute_loss`. Keras calls it in the training step of every back end.
@@ -280,7 +400,7 @@ Use the smallest hook that does the job:
 1. A different loss: write a function or a `Loss` class.
 2. A different number to read: write a `Metric`.
 3. An extra term in the loss that uses the model: override `compute_loss`.
-4. A change in how the gradient is used, such as a second optimizer or gradient accumulation: override `train_step`, and accept that it ties the code to one back end.
+4. A change in how the gradient is used, such as a second optimizer: override `train_step`, and accept that it ties the code to one back end. Gradient accumulation does not need it: it is the optimizer argument `gradient_accumulation_steps` ([Chapter 6](06-losses-metrics-optimizers.md)).
 
 ## How it works
 
@@ -323,37 +443,14 @@ The invariant is this: Adam steps by a fixed size at the start, and SGD steps in
 
 ## Reference
 
-```python
-import keras
-from examples.signatures import show
-
-show(keras.losses.Loss, keras.metrics.Metric, ("Metric.add_variable", keras.metrics.Metric.add_variable),
-     ("Model.compute_loss", keras.Model.compute_loss), ("Model.compute_metrics", keras.Model.compute_metrics),
-     ("Optimizer.apply", keras.optimizers.Optimizer.apply))
-```
-
-```text
-Loss(name=None, reduction='sum_over_batch_size', dtype=None)
-Metric(dtype=None, name=None)
-Metric.add_variable(shape, initializer, dtype=None, aggregation='sum',
-    name=None)
-Model.compute_loss(x=None, y=None, y_pred=None, sample_weight=None,
-    training=True)
-Model.compute_metrics(x, y, y_pred, sample_weight=None)
-Optimizer.apply(grads, trainable_variables=None)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `Loss.call(y_true, y_pred)` | — | you write it; return one value for each sample | Keras does the average, so do not average inside |
-| `Loss(reduction)` | `'sum_over_batch_size'` | how the per-sample values combine | — |
-| `Metric.update_state(y_true, y_pred, sample_weight)` | — | you write it; add this batch to the state | state must live in variables made with `add_variable` |
-| `Metric.add_variable(shape, initializer)` | required | makes one state variable | — |
-| `Metric.reset_state()` | — | you write it; clear the state | a no-op gave 0.6929 at epoch 3, against 0.8934 |
-| `compute_loss(x, y, y_pred, sample_weight)` | all `None` | the loss that `train_step` uses | override it for a change that works on every back end |
-| `compute_metrics(x, y, y_pred)` | required | updates the compiled metrics | returns the loss as 0.0 if nothing updated the loss tracker |
-| `compute_metrics(sample_weight)` | `None` | weights of the samples | — |
-| `Optimizer.apply(grads, trainable_variables)` | — | one update step | — |
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.losses.Loss` | A custom loss class | the base of a loss: `call` returns one value for each sample |
+| `keras.metrics.Metric` | A custom metric | the base of a metric: state in variables, not in Python attributes |
+| `keras.metrics.Metric.add_variable` | A custom metric | a tracked state variable. The initializer is required |
+| `keras.Model.compute_loss` | A custom `train_step` | the loss of `compile` plus the losses of the layers |
+| `keras.Model.compute_metrics` | A custom `train_step` | update the metrics and return their values |
+| `keras.optimizers.Optimizer.apply` | A custom `train_step` | one update of the variables with their gradients |
 
 ## What you have now
 

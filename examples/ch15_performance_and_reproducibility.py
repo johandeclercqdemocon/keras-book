@@ -127,16 +127,6 @@ def block_6():
         print(backend, "->", result.stderr.strip().splitlines()[-1])
 
 
-# ---- block 7 --------------------------------------------------
-def block_7():
-    import keras
-    from examples.signatures import show
-
-    show(("Model.compile", keras.Model.compile),
-         ("utils.set_random_seed", keras.utils.set_random_seed),
-         ("mixed_precision.set_global_policy", keras.mixed_precision.set_global_policy))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -151,5 +141,3 @@ if __name__ == "__main__":
     block_5()
     print('--- block 6')
     block_6()
-    print('--- block 7')
-    block_7()

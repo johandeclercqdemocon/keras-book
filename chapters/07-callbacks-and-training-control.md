@@ -57,6 +57,34 @@ The run stops at epoch 36. The best epoch is 31, five epochs earlier, which is t
 
 The last line of the block shows the default of `restore_best_weights`. It is `False`. If you do not set it, you get the last model and not the best one.
 
+#### `keras.callbacks.EarlyStopping`
+
+```text
+keras.callbacks.EarlyStopping(
+    monitor='val_loss',
+    min_delta=0,
+    patience=0,
+    verbose=0,
+    mode='auto',
+    baseline=None,
+    restore_best_weights=False,
+    start_from_epoch=0,
+)
+```
+
+The callback stops `fit` when the monitored value has not improved for `patience` epochs. The overfitting setup of this chapter gives the numbers in the table.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `monitor` | `'val_loss'` | the key of the logs to watch | a misspelled key such as `"val_los"` raises `ValueError` with a message about `mode`, and not about the name |
+| `min_delta` | `0` | the smallest change that counts as an improvement | with 0.01 and `patience=5`, the run stopped after 23 epochs and not after 36 |
+| `patience` | `0` | the number of epochs with no improvement before the stop | with the default 0, the run stopped after 29 epochs, at the first epoch that did not improve |
+| `verbose` | `0` | 1 prints the epoch of the stop | — |
+| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — (`'auto'` read `val_accuracy` and a top-1 metric named `"top1"` as values to make larger) |
+| `baseline` | `None` | a value that the run must beat | the run does not stop at `patience` epochs above the baseline. A new best value ends the check of that epoch, so the run stops only at the first epoch with no improvement. With `baseline=0.1`, which the run never reached, it stopped after 29 epochs, the same as with `patience=0` |
+| `restore_best_weights` | `False` | give back the weights of the best epoch | with `False`, you get the last model: a loss of 0.2186 and not 0.2176 (this section) |
+| `start_from_epoch` | `0` | the number of epochs before the watch starts | — |
+
 ## Save the best model to disk
 
 `ModelCheckpoint` writes the model to a file. With `save_best_only=True` it writes only when the monitored value improves. The file is a complete model: architecture, weights and optimizer state. [Chapter 14](14-saving-loading-export.md) opens the format.
@@ -104,6 +132,34 @@ val loss, file       : 0.2176
 
 The file holds the model of the best epoch. After 60 epochs the last model is worse than the file. This is the setup to use for long runs: the run can go on, and the best model is on disk when it ends.
 
+#### `keras.callbacks.ModelCheckpoint`
+
+```text
+keras.callbacks.ModelCheckpoint(
+    filepath,
+    monitor='val_loss',
+    verbose=0,
+    save_best_only=False,
+    save_weights_only=False,
+    mode='auto',
+    save_freq='epoch',
+    initial_value_threshold=None,
+)
+```
+
+The callback writes the model, or its weights, to a file during `fit`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | the path. It can hold fields such as `{epoch:02d}` | `"e{epoch:02d}.keras"` made `e01.keras`, `e02.keras` and `e03.keras` in 3 epochs. A path that ends in `.h5` was accepted |
+| `monitor` | `'val_loss'` | the key that decides the best model | — |
+| `verbose` | `0` | 1 prints a line at each save | — |
+| `save_best_only` | `False` | write only when the monitored value improves | with `False`, the file holds the last model, not the best |
+| `save_weights_only` | `False` | write only the weights | with a path that ends in `.keras`, it raises `ValueError: When using save_weights_only=True in ModelCheckpoint, the filepath provided must end in .weights.h5` |
+| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — |
+| `save_freq` | `'epoch'` | `'epoch'`, or a number of batches | — |
+| `initial_value_threshold` | `None` | a value that the first save must beat | with 0.1, which the run never reached, no file was written, and no message said so |
+
 ## Lower the learning rate on a plateau
 
 `ReduceLROnPlateau` multiplies the learning rate by `factor` when the monitored value has not improved for `patience` epochs. Keras writes the learning rate into the history under the key `learning_rate`, so no extra code is needed to see it.
@@ -137,6 +193,36 @@ learning rate: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01
 
 The validation loss rises at epoch 11, from 0.078 to 0.081. With `patience=1`, the rate halves at once, from 0.01 to 0.005. The loss rises again at epoch 12, and the rate halves again to 0.0025. The `learning_rate` entry of an epoch is the rate that the epoch used. The reduction after epoch 11 shows in the entry for epoch 12.
 
+#### `keras.callbacks.ReduceLROnPlateau`
+
+```text
+keras.callbacks.ReduceLROnPlateau(
+    monitor='val_loss',
+    factor=0.1,
+    patience=10,
+    verbose=0,
+    mode='auto',
+    min_delta=0.0001,
+    cooldown=0,
+    min_lr=0.0,
+    **kwargs,
+)
+```
+
+The callback multiplies the learning rate by `factor` when the monitored value has not improved for `patience` epochs.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `monitor` | `'val_loss'` | the key to watch | — |
+| `factor` | `0.1` | the multiplier of the rate | — |
+| `patience` | `10` | the epochs with no improvement before a cut | with the default of 10, no cut can happen in the 15 epochs of this section: the longest stretch with no improvement in the printed losses is 2 epochs. The block uses 1 |
+| `verbose` | `0` | 1 prints each cut | — |
+| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — |
+| `min_delta` | `0.0001` | the smallest change that counts as an improvement | with 0.01, the first cut came at epoch 7 and not at epoch 12, and the rate reached the floor of 0.0001 at epoch 14 |
+| `cooldown` | `0` | the epochs after a cut with no new cut | with 2, the second cut came one epoch later: 0.005 for two epochs, then 0.0025 |
+| `min_lr` | `0.0` | the floor of the rate | — |
+| `**kwargs` | — | accepted and not used | an unknown keyword is ignored with no error. The old name `epsilon=0.5` left `min_delta` at 0.0001 |
+
 ## Stop on `nan`
 
 [Chapter 1](01-the-first-model.md) trained a line with `SGD(1.5)` and got a loss of `nan` without an error. `TerminateOnNaN` turns that silent result into a stop.
@@ -163,11 +249,33 @@ epochs run: 16 of 100
 last loss: inf
 ```
 
-The run stops in epoch 16 and not in epoch 100. The callback prints the batch where the loss became invalid. This callback has no setting, and it costs nothing. Add it to every run that you do not watch.
+The run stops in epoch 16 and not in epoch 100. The callback prints the batch where the loss became invalid. With the default setting, `fit` returns normally after the stop. The table below shows the one parameter. The callback costs nothing. Add it to every run that you do not watch.
+
+#### `keras.callbacks.TerminateOnNaN`
+
+```text
+keras.callbacks.TerminateOnNaN(
+    raise_error=False,
+)
+```
+
+The callback stops `fit` at the first batch with a loss of `nan` or `inf`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `raise_error` | `False` | raise an error and do not only stop | with `True`, the same run raised `RuntimeError: NaN or Inf loss encountered at batch 3`. A script that must fail on a bad run needs it |
 
 ## Write a callback
 
 A callback is a class with methods named `on_epoch_end`, `on_train_batch_end` and others. Each method gets the logs of that moment. The model is in `self.model`. To stop the run, set `self.model.stop_training = True`.
+
+#### `keras.callbacks.Callback`
+
+```text
+keras.callbacks.Callback()
+```
+
+The class is the base of every callback. Its constructor has no parameters. A subclass overrides the methods that it needs, and Keras sets `self.model` before the run starts.
 
 The first callback stops the run when the validation accuracy reaches a target. The second one records the loss of every batch, which the history does not keep.
 
@@ -319,38 +427,13 @@ The value at the last batch of an epoch equals the loss of that epoch in the his
 
 ## Reference
 
-```python
-import keras
-from examples.signatures import show
-
-show(keras.callbacks.EarlyStopping, keras.callbacks.ModelCheckpoint,
-     keras.callbacks.ReduceLROnPlateau, keras.callbacks.TerminateOnNaN, keras.callbacks.Callback)
-```
-
-```text
-EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0,
-    mode='auto', baseline=None, restore_best_weights=False,
-    start_from_epoch=0)
-ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False,
-    save_weights_only=False, mode='auto', save_freq='epoch',
-    initial_value_threshold=None)
-ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=0,
-    mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.0, **kwargs)
-TerminateOnNaN(raise_error: bool = False)
-Callback()
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `EarlyStopping(monitor)` | `'val_loss'` | the log key to watch | — |
-| `EarlyStopping(patience)` | `0` | epochs without improvement before the stop | — |
-| `EarlyStopping(restore_best_weights)` | `False` | return the weights of the best epoch | `False` returns the last model, not the best |
-| `EarlyStopping(mode)` | `'auto'` | direction of "better" | `'min'` on accuracy stopped at epoch 6 with 0.6444 |
-| `ModelCheckpoint(filepath)` | required | where to write the model | the chapter wrote a `.keras` file and loaded it back |
-| `ModelCheckpoint(save_best_only)` | `False` | write only on improvement | — |
-| `ReduceLROnPlateau(factor)` | `0.1` | multiplier of the rate | — |
-| `ReduceLROnPlateau(patience)` | `10` | epochs without improvement before the cut | — |
-| `TerminateOnNaN(raise_error)` | `False` | raise an error and not only stop | — |
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.callbacks.EarlyStopping` | Stop when the validation loss stops falling | stop after `patience` epochs with no improvement |
+| `keras.callbacks.ModelCheckpoint` | Save the best model to disk | a file of the model or of the weights during `fit` |
+| `keras.callbacks.ReduceLROnPlateau` | Lower the learning rate on a plateau | multiply the rate by `factor` on a plateau |
+| `keras.callbacks.TerminateOnNaN` | Stop on `nan` | stop, or raise, at the first invalid loss |
+| `keras.callbacks.Callback` | Write a callback | the base class: methods that `fit` calls at fixed points |
 
 ## What you have now
 

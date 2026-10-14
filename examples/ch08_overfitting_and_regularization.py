@@ -122,16 +122,6 @@ def block_4():
     print("values in inference mode:", sorted(set(inference.ravel().tolist())))
 
 
-# ---- block 5 --------------------------------------------------
-def block_5():
-    import keras
-    from keras import layers
-    from examples.signatures import show
-
-    show(layers.Dropout, ("regularizers.L2", keras.regularizers.L2), layers.GaussianNoise,
-         ("BatchNormalization", layers.BatchNormalization.__init__))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -142,5 +132,3 @@ if __name__ == "__main__":
     block_3()
     print('--- block 4')
     block_4()
-    print('--- block 5')
-    block_5()

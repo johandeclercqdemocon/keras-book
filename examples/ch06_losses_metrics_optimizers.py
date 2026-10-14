@@ -180,15 +180,6 @@ def block_7():
     print("from_logits=False: by hand %.4f, Keras %.4f" % (wrong, float(ops.convert_to_numpy(without))))
 
 
-# ---- block 8 --------------------------------------------------
-def block_8():
-    import keras
-    from examples.signatures import show
-
-    show(keras.losses.SparseCategoricalCrossentropy, keras.optimizers.SGD, keras.optimizers.Adam,
-         keras.optimizers.schedules.CosineDecay, keras.metrics.SparseTopKCategoricalAccuracy)
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -205,5 +196,3 @@ if __name__ == "__main__":
     block_6()
     print('--- block 7')
     block_7()
-    print('--- block 8')
-    block_8()

@@ -212,15 +212,6 @@ def block_7():
     print("first four values:", [round(float(v), 3) for v in values[:4]])
 
 
-# ---- block 8 --------------------------------------------------
-def block_8():
-    import keras
-    from examples.signatures import show
-
-    show(keras.callbacks.EarlyStopping, keras.callbacks.ModelCheckpoint,
-         keras.callbacks.ReduceLROnPlateau, keras.callbacks.TerminateOnNaN, keras.callbacks.Callback)
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -237,5 +228,3 @@ if __name__ == "__main__":
     block_6()
     print('--- block 7')
     block_7()
-    print('--- block 8')
-    block_8()

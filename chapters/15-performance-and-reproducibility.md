@@ -187,6 +187,22 @@ Read the lines in order. `steps_per_execution=4` runs four steps in one call, an
 
 Mixed precision changed the result. The compute type is `float16`, the variables stay `float32`, and the optimizer is wrapped in a loss-scaling optimizer. The loss after 3 epochs is different from the default. The difference is the price of the 16-bit numbers of [Chapter 2](02-tensors-and-ops.md). Whether the speed pays for it depends on hardware that this book did not have.
 
+The options `steps_per_execution` and `jit_compile` are parameters of `compile` ([Chapter 1](01-the-first-model.md)). The policy is a global setting.
+
+#### `keras.mixed_precision.set_global_policy`
+
+```text
+keras.mixed_precision.set_global_policy(
+    policy,
+)
+```
+
+The function sets the default types of the layers that you create after the call: the type of the computation and the type of the variables.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `policy` | required | the name of a policy, or a `DTypePolicy` | the setting is global and stays: a layer made after the call still had `mixed_float16` until the block set `"float32"` again. `"float16"` makes the variables 16-bit too, and `"mixed_float16"` keeps them in `float32`. A name such as `"fp16"` raises `ValueError: Cannot convert 'fp16' to a mixed precision DTypePolicy` |
+
 ## The other back ends
 
 Keras 3 runs on JAX and on PyTorch. This book installed neither, so no result in it comes from them. The next block shows what Keras says when you ask.
@@ -220,30 +236,11 @@ The statement "this code runs on every back end" is a property of the functions 
 
 ## Reference
 
-```python
-import keras
-from examples.signatures import show
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.mixed_precision.set_global_policy` | Four speed options, measured for their effect | the default types of the layers made after the call |
 
-show(("Model.compile", keras.Model.compile),
-     ("utils.set_random_seed", keras.utils.set_random_seed),
-     ("mixed_precision.set_global_policy", keras.mixed_precision.set_global_policy))
-```
-
-```text
-Model.compile(optimizer='rmsprop', loss=None, loss_weights=None, metrics=None,
-    weighted_metrics=None, run_eagerly=False, steps_per_execution=1,
-    jit_compile='auto', auto_scale_loss=True)
-utils.set_random_seed(seed)
-mixed_precision.set_global_policy(policy)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `compile(steps_per_execution)` | `1` | steps that run in one call | 4 gave the same weights as 1 |
-| `compile(jit_compile)` | `'auto'` | compile the step with XLA | `True` printed that the model does not support it, on this machine |
-| `compile(run_eagerly)` | `False` | run the step in Python | — |
-| `set_random_seed(seed)` | required | seeds Python, NumPy and the back end | with determinism on, a missing seed is an error |
-| `set_global_policy(policy)` | required | default compute and variable types | `'mixed_float16'` changed the loss |
+`keras.Model.compile` is in [Chapter 1](01-the-first-model.md), and `keras.utils.set_random_seed` is in [Chapter 2](02-tensors-and-ops.md).
 
 ## What you have now
 

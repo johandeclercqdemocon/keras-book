@@ -45,6 +45,36 @@ by hand equals keras.ops below 1e-5: True
 
 The weight array has one row for each query and one column for each key. Each row sums to 1, so the output is a weighted average of the values. The hand-written version and the built-in version agree.
 
+#### `keras.ops.dot_product_attention`
+
+```text
+keras.ops.dot_product_attention(
+    query,
+    key,
+    value,
+    bias=None,
+    mask=None,
+    scale=None,
+    is_causal=False,
+    flash_attention=None,
+    attn_logits_soft_cap=None,
+)
+```
+
+The function computes `softmax(Q Kᵀ × scale + bias) V` for each head. The inputs have the layout `(batch, time, heads, width)`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `query` | required | the queries | a 3-D input raises `ValueError: dot_product_attention only supports 4D inputs` |
+| `key` | required | the keys | — |
+| `value` | required | the values | — |
+| `bias` | `None` | a number added to each score | — (a bias of -1e9 on key 0 gave the same output as a mask on key 0) |
+| `mask` | `None` | a boolean array. `False` removes a key | — |
+| `scale` | `None` | the factor of the scores. With `None`, `1 / sqrt(width)` | with 1.0 in place of 1/√8, the mean largest weight of a row rose from 0.659 to 0.896: the weights are sharper |
+| `is_causal` | `False` | remove the keys after each query | — (a change at position 4 did not move the outputs at 0 to 3) |
+| `flash_attention` | `None` | use a fused kernel when it can | `True` raises `ValueError: Flash attention is not supported in tensorflow backend` |
+| `attn_logits_soft_cap` | `None` | limit the scores with `tanh` | any value raises `ValueError: attn_logits_soft_cap is only supported for JAX on TPU` |
+
 ## The Keras layer
 
 `keras.layers.MultiHeadAttention` adds learned projections for the query, the key and the value, runs several attention heads, and projects the result back. With `return_attention_scores=True` it also returns the weights.
@@ -94,6 +124,88 @@ The weights have the shape `(batch, heads, query, key)`: 2 heads and a 6 × 6 ta
 
 The causal mask limits each position to the positions before it and itself. With the mask, a change at token 4 does not move the outputs at positions 0 to 3. Without the mask it moves them. A model that predicts the next token needs the mask. A model that classifies a whole sequence does not.
 
+#### `keras.layers.MultiHeadAttention`
+
+```text
+keras.layers.MultiHeadAttention(
+    num_heads,
+    key_dim,
+    value_dim=None,
+    dropout=0.0,
+    use_bias=True,
+    output_shape=None,
+    attention_axes=None,
+    sliding_window=None,
+    flash_attention=None,
+    kernel_initializer='glorot_uniform',
+    bias_initializer='zeros',
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    kernel_constraint=None,
+    bias_constraint=None,
+    use_gate=False,
+    seed=None,
+    **kwargs,
+)
+```
+
+The layer projects the query, the key and the value for each of `num_heads` heads, runs attention, and projects the result back.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `num_heads` | required | the number of heads | — |
+| `key_dim` | required | the width of the query and the key in one head | it does not need to be the width of the input divided by the heads: `key_dim=3` on 16 features gave an output of 16 and 418 weights, against 1,088 for 8 |
+| `value_dim` | `None` | the width of the value in one head. With `None`, `key_dim` | — (4 gave 824 weights) |
+| `dropout` | `0.0` | dropout on the attention weights, in training only | — |
+| `use_bias` | `True` | add biases to the projections | — (with `False`, 1,024 weights) |
+| `output_shape` | `None` | the width of the output. With `None`, the width of the query | — (4 gave `(1, 6, 4)` on an input of width 16) |
+| `attention_axes` | `None` | the axes to attend over. With `None`, all axes between the batch and the features | — |
+| `sliding_window` | `None` | limit each query to near keys | with 2, a change at token 4 moved the outputs at 3, 4 and 5 only. With 1, only at 4 |
+| `flash_attention` | `None` | use a fused kernel | `True` raised `ValueError` on this back end, at the call |
+| `kernel_initializer` | `'glorot_uniform'` | the start values of the projections | — |
+| `bias_initializer` | `'zeros'` | the start values of the biases | — |
+| `kernel_regularizer` | `None` | a penalty on the projections | — |
+| `bias_regularizer` | `None` | a penalty on the biases | — |
+| `activity_regularizer` | `None` | a penalty on the output | — |
+| `kernel_constraint` | `None` | a rule for the projections | — |
+| `bias_constraint` | `None` | a rule for the biases | — |
+| `use_gate` | `False` | add a learned gate to the output of each head | — (1,360 weights against 1,088) |
+| `seed` | `None` | the seed of the dropout | — |
+| `**kwargs` | — | the arguments of `Layer` | — |
+
+#### `keras.layers.MultiHeadAttention.call`
+
+```text
+keras.layers.MultiHeadAttention.call(
+    query,
+    value,
+    key=None,
+    query_mask=None,
+    value_mask=None,
+    key_mask=None,
+    attention_mask=None,
+    return_attention_scores=False,
+    training=None,
+    use_causal_mask=False,
+)
+```
+
+The method is what `attention(query, value)` runs. The key is optional.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `query` | required | the sequence that asks | — |
+| `value` | required | the sequence that answers | the two can have different lengths: a query of 6 and a value of 9 gave scores of shape `(1, 2, 6, 9)` |
+| `key` | `None` | the keys. With `None`, `value` | — (the output was equal to `key=value`) |
+| `query_mask` | `None` | a boolean mask on the queries | — |
+| `value_mask` | `None` | a boolean mask on the values | with `False` on the last 2 values, their weights were 0.0 |
+| `key_mask` | `None` | a boolean mask on the keys | — |
+| `attention_mask` | `None` | a boolean array `(batch, query, key)`. `False` removes a pair | with `False` for key 0, its weight was 0.0 in every row |
+| `return_attention_scores` | `False` | also return the weights | — (the result is then a pair `(output, weights)`) |
+| `training` | `None` | the mode for the dropout | — |
+| `use_causal_mask` | `False` | remove the keys after each query | — (this section) |
+
 ## A transformer block
 
 A transformer block has two parts, each with a residual connection and a layer normalization. The first part is attention. The second is a small dense network that is applied to each position alone. The block below is a `keras.layers.Layer` with these parts.
@@ -118,6 +230,40 @@ class TransformerBlock(layers.Layer):
 ```
 
 The residual connection `x + attention(x, x)` lets the gradient pass around the attention. The layer normalization keeps the scale of each position stable.
+
+#### `keras.layers.LayerNormalization`
+
+```text
+keras.layers.LayerNormalization(
+    axis=-1,
+    epsilon=0.001,
+    center=True,
+    scale=True,
+    beta_initializer='zeros',
+    gamma_initializer='ones',
+    beta_regularizer=None,
+    gamma_regularizer=None,
+    beta_constraint=None,
+    gamma_constraint=None,
+    **kwargs,
+)
+```
+
+The layer subtracts the mean of each sample and divides by its standard deviation over the feature axis. It has no moving statistics, so training and inference compute the same thing.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `axis` | `-1` | the axis or axes of the statistics | with `[1, 2]` on `(6, 16)`, `gamma` had the shape `(6, 16)` and the layer had 192 weights, not 32 |
+| `epsilon` | `0.001` | a small number added to the variance | it is large for rows with a small variance: a row with the variance 0.002 came out with the standard deviation 0.816, not 1. With 1e-6 it was 1.0 |
+| `center` | `True` | add the shift `beta` | — (16 weights fewer) |
+| `scale` | `True` | add the scale `gamma` | — |
+| `beta_initializer` | `'zeros'` | the start value of `beta` | — |
+| `gamma_initializer` | `'ones'` | the start value of `gamma` | — |
+| `beta_regularizer` | `None` | a penalty on `beta` | — |
+| `gamma_regularizer` | `None` | a penalty on `gamma` | — |
+| `beta_constraint` | `None` | a rule for `beta` | — |
+| `gamma_constraint` | `None` | a rule for `gamma` | — |
+| `**kwargs` | — | the arguments of `Layer` | — |
 
 ## The test: order
 
@@ -247,45 +393,12 @@ The count matches. The number of weights does not change when the length of the 
 
 ## Reference
 
-```python
-from keras import layers, ops
-from examples.signatures import show
-
-show(layers.MultiHeadAttention, ("MultiHeadAttention.call", layers.MultiHeadAttention.call),
-     layers.LayerNormalization, ("ops.dot_product_attention", ops.dot_product_attention))
-```
-
-```text
-MultiHeadAttention(num_heads, key_dim, value_dim=None, dropout=0.0,
-    use_bias=True, output_shape=None, attention_axes=None,
-    sliding_window=None, flash_attention=None,
-    kernel_initializer='glorot_uniform', bias_initializer='zeros',
-    kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
-    kernel_constraint=None, bias_constraint=None, use_gate=False, seed=None,
-    **kwargs)
-MultiHeadAttention.call(query, value, key=None, query_mask=None,
-    value_mask=None, key_mask=None, attention_mask=None,
-    return_attention_scores=False, training=None, use_causal_mask=False)
-LayerNormalization(axis=-1, epsilon=0.001, center=True, scale=True,
-    beta_initializer='zeros', gamma_initializer='ones', beta_regularizer=None,
-    gamma_regularizer=None, beta_constraint=None, gamma_constraint=None,
-    **kwargs)
-ops.dot_product_attention(query, key, value, bias=None, mask=None, scale=None,
-    is_causal=False, flash_attention=None, attn_logits_soft_cap=None)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `MultiHeadAttention(num_heads)` | required | number of attention heads | — |
-| `MultiHeadAttention(key_dim)` | required | width of each head for the query and the key | the block used `width // heads`, so the heads add up to the width |
-| `call(query, value)` | required | self-attention passes the same tensor twice | — |
-| `call(use_causal_mask)` | `False` | each position sees only itself and the past | `False` moved earlier outputs by 0.513; `True` moved them by 0.0 |
-| `call(return_attention_scores)` | `False` | also return the weights `(batch, heads, query, key)` | — |
-| `LayerNormalization(axis)` | `-1` | the axis that is normalized | — |
-| `LayerNormalization(epsilon)` | `0.001` | small number added to the variance | — |
-| `ops.dot_product_attention(is_causal)` | `False` | the causal mask for the built-in function | — |
-
-The layer has no argument for the position of a token. A model that needs order must add a position vector before the layer, as `AddPositions` does.
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.ops.dot_product_attention` | Attention by hand | `softmax(Q Kᵀ / √d) V` on 4-D inputs |
+| `keras.layers.MultiHeadAttention` | The Keras layer | projections, several heads, and a projection back |
+| `keras.layers.MultiHeadAttention.call` | The Keras layer | `attention(query, value)`, with optional masks and weights |
+| `keras.layers.LayerNormalization` | A transformer block | normalize each sample over its features |
 
 ## What you have now
 

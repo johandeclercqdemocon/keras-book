@@ -44,6 +44,52 @@ history keys    : ['accuracy', 'loss', 'val_accuracy', 'val_loss']
 
 The model reaches an accuracy of 0.9711 on the test images: 437 of 450 are correct. The history has four keys. Every key that starts with `val_` is the same quantity measured on the validation data.
 
+#### `keras.losses.SparseCategoricalCrossentropy`
+
+```text
+keras.losses.SparseCategoricalCrossentropy(
+    from_logits=False,
+    ignore_class=None,
+    reduction='sum_over_batch_size',
+    axis=-1,
+    name='sparse_categorical_crossentropy',
+    dtype=None,
+)
+```
+
+The loss is the cross-entropy between integer labels and the scores or probabilities of the model.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `from_logits` | `False` | `True` says that the output is raw scores, not probabilities | `False` on raw scores gave an accuracy of 0.5711 and no warning (this chapter) |
+| `ignore_class` | `None` | a label value to leave out of the loss | the mean is over the other samples only: with 3 of 8 labels equal to 0, `ignore_class=0` gave 2.8243, the mean of the other 5, and not their sum divided by 8 |
+| `reduction` | `'sum_over_batch_size'` | how the values of the samples combine | `"sum"` gave 21.3582, 8 times the mean of 2.6698. `None` gives one value for each sample |
+| `axis` | `-1` | the axis of the classes | — |
+| `name` | `'sparse_categorical_crossentropy'` | the name of the loss | — |
+| `dtype` | `None` | the type of the computation | — |
+
+The exercises use a second metric. It counts a sample as correct when the label is among the `k` highest scores.
+
+#### `keras.metrics.SparseTopKCategoricalAccuracy`
+
+```text
+keras.metrics.SparseTopKCategoricalAccuracy(
+    k=5,
+    name='sparse_top_k_categorical_accuracy',
+    dtype=None,
+    from_sorted_ids=False,
+)
+```
+
+The metric is the share of samples whose label is among the `k` highest scores.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `k` | `5` | the number of highest scores that count | with 10 classes, the default is easy: 0.9956 for a model with an accuracy of 0.9511. With `k=1` it gave 0.9511, the accuracy |
+| `name` | `'sparse_top_k_categorical_accuracy'` | the key in `history` | two of these metrics with the default name became `sparse_top_k_categorical_accuracy` and `sparse_top_k_categorical_accuracy_1`, and the key does not say which `k` is which. Give each a name, such as `"top1"` |
+| `dtype` | `None` | the type of the result | — |
+| `from_sorted_ids` | `False` | the predictions are already the sorted ids of the best classes | — |
+
 ## The label format and the loss
 
 Class labels come in two formats. A label can be an integer, such as 7. It can also be a one-hot vector with 10 values and a 1 at position 7. The two formats need two loss classes: `SparseCategoricalCrossentropy` for integers and `CategoricalCrossentropy` for one-hot vectors.
@@ -78,6 +124,22 @@ integer labels : (0.1547, 0.9711)
 one-hot labels : (0.1547, 0.9711)
 equal          : True
 ```
+
+#### `keras.utils.to_categorical`
+
+```text
+keras.utils.to_categorical(
+    x,
+    num_classes=None,
+)
+```
+
+The function returns one-hot vectors for integer labels, as a NumPy array of `float64`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | the integer labels | a negative label is accepted with no error: `-1` became the last class, `[0, 0, 1]` |
+| `num_classes` | `None` | the width of the vectors. With `None`, the largest label plus 1 | the labels `[0, 2]` gave a width of 3, so a batch with no 9 gets the wrong width. A label that is too large raises `IndexError` |
 
 The result is the same to four digits. Use integer labels. They are smaller, and there is no step that can build the vectors wrongly. The metric name `"accuracy"` also adapts: Keras picks the sparse or the dense version from the shape of the labels.
 
@@ -176,6 +238,92 @@ The first column is a real difference. Momentum keeps a running sum of past grad
 
 AdamW is Adam with weight decay that is applied to the weights directly. On this problem the decay is too small to show.
 
+The two optimizers that the book uses most are `SGD` and `Adam`. The last ten parameters of the two are the same, and so are their rows.
+
+#### `keras.optimizers.SGD`
+
+```text
+keras.optimizers.SGD(
+    learning_rate=0.01,
+    momentum=0.0,
+    nesterov=False,
+    weight_decay=None,
+    clipnorm=None,
+    clipvalue=None,
+    global_clipnorm=None,
+    use_ema=False,
+    ema_momentum=0.99,
+    ema_overwrite_frequency=None,
+    loss_scale_factor=None,
+    gradient_accumulation_steps=None,
+    name=None,
+    **kwargs,
+)
+```
+
+The optimizer subtracts the learning rate times the gradient, with an optional momentum.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `learning_rate` | `0.01` | the size of the step, or a schedule | 1.5 gave `nan` on the line ([Chapter 1](01-the-first-model.md)) |
+| `momentum` | `0.0` | the share of the previous step that carries over | 0.9 reached 0.913 after one epoch, against 0.716 |
+| `nesterov` | `False` | compute the gradient at the point that the momentum moves to | with `momentum=0.9`: 0.916 after one epoch and 0.973 after 10, against 0.913 and 0.960 |
+| `weight_decay` | `None` | shrink the weights at each step | 0.1 at a rate of 0.1 cut the norm of the first kernel from 9.967 to 2.643, and the accuracy from 0.962 to 0.751 |
+| `clipnorm` | `None` | limit the norm of the gradient of each weight array | at a rate of 2.0, `clipnorm=1.0` did not rescue the run (Gradient clipping, below) |
+| `clipvalue` | `None` | limit each number of the gradient to a range | `clipvalue=0.1` gave 0.942 at a rate of 2.0 |
+| `global_clipnorm` | `None` | limit the norm of all gradients together | `global_clipnorm=1.0` gave 0.96 at a rate of 2.0, the only full rescue |
+| `use_ema` | `False` | keep a moving average of the weights, and copy it into the model at the end of `fit` | the last `val_accuracy` of the history was 0.962. `evaluate` after `fit` gave 0.949: the history does not describe the weights that you keep |
+| `ema_momentum` | `0.99` | the weight of the old value in the moving average | — |
+| `ema_overwrite_frequency` | `None` | copy the average into the model every `n` steps. With `None`, only at the end of `fit` | — |
+| `loss_scale_factor` | `None` | multiply the loss before the gradient, and divide the gradient after | — |
+| `gradient_accumulation_steps` | `None` | add the gradients of `n` batches, then make one update | with 4, one epoch of 43 batches made 10 updates and not 43 |
+| `name` | `None` | the name of the optimizer | — |
+| `**kwargs` | — | no other keyword is accepted | the old name `lr=0.1` raises `ValueError: Argument(s) not recognized: {'lr': 0.1}` |
+
+#### `keras.optimizers.Adam`
+
+```text
+keras.optimizers.Adam(
+    learning_rate=0.001,
+    beta_1=0.9,
+    beta_2=0.999,
+    epsilon=1e-07,
+    amsgrad=False,
+    weight_decay=None,
+    clipnorm=None,
+    clipvalue=None,
+    global_clipnorm=None,
+    use_ema=False,
+    ema_momentum=0.99,
+    ema_overwrite_frequency=None,
+    loss_scale_factor=None,
+    gradient_accumulation_steps=None,
+    name=None,
+    **kwargs,
+)
+```
+
+The optimizer divides each step by a moving estimate of the size of the gradient. This removes most of the scale of the gradient.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `learning_rate` | `0.001` | the base size of the step, or a schedule | too small for the line in 100 epochs ([Chapter 1](01-the-first-model.md)) |
+| `beta_1` | `0.9` | the momentum of the mean of the gradient | with 0, 0.658 after one epoch against 0.693, and the same 0.951 after 10 |
+| `beta_2` | `0.999` | the momentum of the mean of the squared gradient | — |
+| `epsilon` | `1e-07` | a small number added to the divisor | with 1.0, the accuracy was 0.098 after 10 epochs: the divisor is then mostly `epsilon`, and the step is too small |
+| `amsgrad` | `False` | keep the largest squared-gradient estimate so far | — (the same 0.693 and 0.951 as the default on this problem) |
+| `weight_decay` | `None` | shrink the weights at each step | — |
+| `clipnorm` | `None` | limit the norm of the gradient of each weight array | at a rate of 2.0, `clipnorm=1.0` did not rescue the run (Gradient clipping, below) |
+| `clipvalue` | `None` | limit each number of the gradient to a range | `clipvalue=0.1` gave 0.942 at a rate of 2.0 |
+| `global_clipnorm` | `None` | limit the norm of all gradients together | `global_clipnorm=1.0` gave 0.96 at a rate of 2.0, the only full rescue |
+| `use_ema` | `False` | keep a moving average of the weights, and copy it into the model at the end of `fit` | the last `val_accuracy` of the history was 0.962. `evaluate` after `fit` gave 0.949: the history does not describe the weights that you keep |
+| `ema_momentum` | `0.99` | the weight of the old value in the moving average | — |
+| `ema_overwrite_frequency` | `None` | copy the average into the model every `n` steps. With `None`, only at the end of `fit` | — |
+| `loss_scale_factor` | `None` | multiply the loss before the gradient, and divide the gradient after | — |
+| `gradient_accumulation_steps` | `None` | add the gradients of `n` batches, then make one update | with 4, one epoch of 43 batches made 10 updates and not 43 |
+| `name` | `None` | the name of the optimizer | — |
+| `**kwargs` | — | no other keyword is accepted | the old name `lr=0.1` raises `ValueError: Argument(s) not recognized: {'lr': 0.1}` |
+
 ## The learning rate schedule
 
 A schedule changes the learning rate during training. Pass a schedule object in place of a number. The next block shows the values of a cosine decay and trains with it.
@@ -209,6 +357,30 @@ rate at step 0, middle, end: [0.01, 0.005, 0.0]
 constant 0.01   : 0.9733
 cosine from 0.01: 0.9689
 ```
+
+#### `keras.optimizers.schedules.CosineDecay`
+
+```text
+keras.optimizers.schedules.CosineDecay(
+    initial_learning_rate,
+    decay_steps,
+    alpha=0.0,
+    name='CosineDecay',
+    warmup_target=None,
+    warmup_steps=0,
+)
+```
+
+The schedule returns a learning rate for each step. It falls from the start value to `alpha` times the start value along half a cosine wave.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `initial_learning_rate` | required | the rate at step 0, or at the end of the warmup | — |
+| `decay_steps` | required | the number of steps of the decay | after `decay_steps`, the rate stays at the end value: 0.0 at step 100 and at step 200 |
+| `alpha` | `0.0` | the end value as a fraction of the start | with 0.1, the rate stays at 0.001 from step 100 |
+| `name` | `'CosineDecay'` | the name | — |
+| `warmup_target` | `None` | the rate at the end of a linear warmup | from 0.001 to 0.01 over 20 steps: 0.0055 at step 10, then the decay over 100 more steps, 0.0 at step 120 |
+| `warmup_steps` | `0` | the length of the warmup | without `warmup_target`, there is no warmup: the rate was 0.00098 at step 10, already below the start |
 
 The schedule works as described: the rate starts at 0.01 and ends at 0. On this problem it does not help. The constant rate is 0.0044 higher, which is 2 images of 450. A schedule pays back on longer runs and larger models. Do not add one without a measurement.
 
@@ -296,44 +468,14 @@ This is the reason that the model in this chapter trained to 0.5711 and not to 0
 
 ## Reference
 
-```python
-import keras
-from examples.signatures import show
-
-show(keras.losses.SparseCategoricalCrossentropy, keras.optimizers.SGD, keras.optimizers.Adam,
-     keras.optimizers.schedules.CosineDecay, keras.metrics.SparseTopKCategoricalAccuracy)
-```
-
-```text
-SparseCategoricalCrossentropy(from_logits=False, ignore_class=None,
-    reduction='sum_over_batch_size', axis=-1,
-    name='sparse_categorical_crossentropy', dtype=None)
-SGD(learning_rate=0.01, momentum=0.0, nesterov=False, weight_decay=None,
-    clipnorm=None, clipvalue=None, global_clipnorm=None, use_ema=False,
-    ema_momentum=0.99, ema_overwrite_frequency=None, loss_scale_factor=None,
-    gradient_accumulation_steps=None, name=None, **kwargs)
-Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07,
-    amsgrad=False, weight_decay=None, clipnorm=None, clipvalue=None,
-    global_clipnorm=None, use_ema=False, ema_momentum=0.99,
-    ema_overwrite_frequency=None, loss_scale_factor=None,
-    gradient_accumulation_steps=None, name=None, **kwargs)
-CosineDecay(initial_learning_rate, decay_steps, alpha=0.0, name='CosineDecay',
-    warmup_target=None, warmup_steps=0)
-SparseTopKCategoricalAccuracy(k=5, name='sparse_top_k_categorical_accuracy',
-    dtype=None, from_sorted_ids=False)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `SparseCategoricalCrossentropy(from_logits)` | `False` | the output is raw scores, not probabilities | `False` on raw scores gave 0.5711 and no warning |
-| `SparseCategoricalCrossentropy(reduction)` | `'sum_over_batch_size'` | how the per-sample values combine | — |
-| `SGD(learning_rate)` | `0.01` | size of the step | 1.5 gave `nan` on the line (Chapter 1) |
-| `SGD(momentum)` | `0.0` | share of the previous step that carries over | 0.9 reached 0.913 after one epoch, against 0.716 |
-| `Adam(learning_rate)` | `0.001` | base size of the step | too small for the line in 100 epochs |
-| `Adam(epsilon)` | `1e-07` | floor of the divisor in the update | — |
-| `clipnorm`, `clipvalue`, `global_clipnorm` | `None` | three kinds of gradient clipping | at a rate of 2.0 only `global_clipnorm` rescued the run |
-| `CosineDecay(decay_steps)` | required | steps over which the rate falls to `alpha` times the start | — |
-| `SparseTopKCategoricalAccuracy(k)` | `5` | the label counts if it is in the best `k` | the default of 5 is high for 10 classes |
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.losses.SparseCategoricalCrossentropy` | A baseline | cross-entropy for integer labels. `from_logits` must match the last layer |
+| `keras.metrics.SparseTopKCategoricalAccuracy` | A baseline | the share of labels among the `k` highest scores |
+| `keras.utils.to_categorical` | The label format and the loss | one-hot vectors of `float64`, with no check of the labels |
+| `keras.optimizers.SGD` | The optimizer | a step against the gradient, with momentum and clipping |
+| `keras.optimizers.Adam` | The optimizer | a step scaled by the size of the recent gradients |
+| `keras.optimizers.schedules.CosineDecay` | The learning rate schedule | a rate that falls along half a cosine, with an optional warmup |
 
 ## What you have now
 

@@ -48,6 +48,52 @@ formula for the first row: 3 * 3 * 1 * 16 + 16 = 160
 
 The `valid` filter of size 3 turns 8 pixels into 6, and the `same` filter keeps 8. The weight count does not change with the padding. A filter of size 5 has 25 weights for each filter instead of 9. The same layer has the same 160 weights on a 1,000 × 1,000 image. A dense layer from 64 inputs to 16 units has 1,040 weights. On a 1,000 × 1,000 image the same dense layer has 16 million.
 
+#### `keras.layers.Conv2D`
+
+```text
+keras.layers.Conv2D(
+    filters,
+    kernel_size,
+    strides=(1, 1),
+    padding='valid',
+    data_format=None,
+    dilation_rate=(1, 1),
+    groups=1,
+    activation=None,
+    use_bias=True,
+    kernel_initializer='glorot_uniform',
+    bias_initializer='zeros',
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    kernel_constraint=None,
+    bias_constraint=None,
+    **kwargs,
+)
+```
+
+The layer slides `filters` kernels of the size `kernel_size` over the image. The parameters from `activation` to `bias_constraint` have the same meaning as in `Dense` ([Chapter 1](01-the-first-model.md)).
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filters` | required | the number of kernels, which is the number of output channels | — |
+| `kernel_size` | required | the height and width of a kernel, as one number or a pair | a kernel of 9 on an 8 × 8 image with `padding="valid"` raises `ValueError: Computed output size would be zero or negative` |
+| `strides` | `(1, 1)` | the step of the window | with 2 and `"valid"`, the 8 × 8 input gave 3 × 3 |
+| `padding` | `'valid'` | `"valid"` or `"same"` | `"causal"` raises `ValueError`. It exists for `Conv1D` only ([Chapter 11](11-sequences.md)) |
+| `data_format` | `None` | `"channels_last"` or `"channels_first"`. With `None`, the setting of `keras.config`, `channels_last` | with `"channels_first"`, the input `(8, 8, 1)` was read as 8 channels of 8 × 1, and the layer raised `ValueError` |
+| `dilation_rate` | `(1, 1)` | the gap between the taps of the kernel | with 2, a kernel of 3 covers 5 × 5: the output was 4 × 4 with the same 160 weights. With `strides=2` too, it raises `ValueError: strides > 1 not supported in conjunction with dilation_rate > 1` |
+| `groups` | `1` | split the input channels into groups with their own kernels | with 2 on 4 input channels, 304 weights and not 592. On 1 channel it raises `ValueError` |
+| `activation` | `None` | the function on the output | — |
+| `use_bias` | `True` | add one bias for each filter | — |
+| `kernel_initializer` | `'glorot_uniform'` | the start values of the kernel | — |
+| `bias_initializer` | `'zeros'` | the start values of the bias | — |
+| `kernel_regularizer` | `None` | a penalty on the kernel | — |
+| `bias_regularizer` | `None` | a penalty on the bias | — |
+| `activity_regularizer` | `None` | a penalty on the output | — |
+| `kernel_constraint` | `None` | a rule for the kernel after each update | — |
+| `bias_constraint` | `None` | a rule for the bias | — |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+
 ## Convolution moves with the input
 
 The property that matters is *equivariance*: if you move the input, the output moves by the same amount. The next block checks it. It builds one convolutional layer with random weights, shifts the images by one pixel to the right, and compares the two outputs.
@@ -157,6 +203,80 @@ The `cnn global` model scores 0.991 in all three columns. It is the best model o
 
 Augmentation is the other way to get robustness. It works for both models and it costs training time. The dense model scores 0.949 on centered images and 0.853 on the right shift. The CNN scores 0.991 and 0.951. The augmented CNN is still below the `cnn global` model on the shifted images. A structure that has the right property beats data that teaches it.
 
+The models used three more layers.
+
+#### `keras.layers.MaxPooling2D`
+
+```text
+keras.layers.MaxPooling2D(
+    pool_size=(2, 2),
+    strides=None,
+    padding='valid',
+    data_format=None,
+    name=None,
+    **kwargs,
+)
+```
+
+The layer takes the maximum of each window. It has no weights.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `pool_size` | `(2, 2)` | the size of the window | on 7 × 7, a window of 2 gave 3 × 3: the last row and column were dropped |
+| `strides` | `None` | the step. With `None`, `pool_size` | with `strides=1`, 7 × 7 gave 6 × 6, and the windows overlap |
+| `padding` | `'valid'` | `"valid"` or `"same"` | with `"same"`, 7 × 7 gave 4 × 4, and no row was dropped |
+| `data_format` | `None` | as for `Conv2D` | — |
+| `name` | `None` | the name of the layer | — |
+| `**kwargs` | — | the other arguments of `Layer` | — |
+
+#### `keras.layers.GlobalMaxPooling2D`
+
+```text
+keras.layers.GlobalMaxPooling2D(
+    data_format=None,
+    keepdims=False,
+    **kwargs,
+)
+```
+
+The layer takes the maximum of each channel over all positions. The position is lost, which is the source of the invariance in the table.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `data_format` | `None` | as for `Conv2D` | with `"channels_first"`, the input `(7, 7, 16)` gave `(None, 7)` and not `(None, 16)`, with no error |
+| `keepdims` | `False` | keep the two spatial axes with size 1 | with `True`, the output is `(None, 1, 1, 16)` and not `(None, 16)` |
+| `**kwargs` | — | the arguments of `Layer` | — |
+
+#### `keras.layers.RandomTranslation`
+
+```text
+keras.layers.RandomTranslation(
+    height_factor,
+    width_factor,
+    fill_mode='reflect',
+    interpolation='bilinear',
+    seed=None,
+    fill_value=0.0,
+    data_format=None,
+    **kwargs,
+)
+```
+
+In training, the layer shifts each image by a random share of its height and width.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `height_factor` | required | the largest shift, as a share of the height, or a pair `(low, high)` | the shift is random and continuous: 0.125 on 8 pixels is any shift from -1 to 1 pixel, not exactly 1 pixel. A factor outside -1 to 1 raises `ValueError` |
+| `width_factor` | required | the same for the width | — |
+| `fill_mode` | `'reflect'` | how to fill the pixels that the shift uncovers: `"reflect"`, `"constant"`, `"nearest"` or `"wrap"` | on 200 test digits shifted by up to 2 pixels, `"reflect"` copied ink into the border (mean 0.3023 against 0.3019 before), and `"constant"` filled it with 0 (mean 0.2639). The chapter uses `"constant"` |
+| `interpolation` | `'bilinear'` | how to compute a pixel at a fractional shift | with `"bilinear"`, 70% of the pixel values were no longer multiples of 1/16. With `"nearest"`, none changed in this way |
+| `seed` | `None` | the seed of the layer | — |
+| `fill_value` | `0.0` | the value for `fill_mode="constant"` | — |
+| `data_format` | `None` | as for `Conv2D` | — |
+| `**kwargs` | — | the arguments of `Layer` | — |
+
+The layer is active in training only, and the definition of training is not the same as for `Dropout`. `model.predict` and a call with `training=False` returned the images unchanged. A direct call, and `model(x)` with no `training` argument, shifted them. `Dropout` does nothing in a direct call ([Chapter 8](08-overfitting-and-regularization.md)). Pass `training=False` when you call a model with augmentation layers yourself.
+
 ## What to take from the table
 
 Three results are worth keeping. First, a convolution is not enough. The flatten step puts back what the filter sharing took out.
@@ -208,38 +328,12 @@ The layer equals the two loops. The invariant is this: every output position use
 
 ## Reference
 
-```python
-from keras import layers
-from examples.signatures import show
-
-show(layers.Conv2D, layers.MaxPooling2D, layers.GlobalMaxPooling2D, layers.RandomTranslation)
-```
-
-```text
-Conv2D(filters, kernel_size, strides=(1, 1), padding='valid',
-    data_format=None, dilation_rate=(1, 1), groups=1, activation=None,
-    use_bias=True, kernel_initializer='glorot_uniform',
-    bias_initializer='zeros', kernel_regularizer=None, bias_regularizer=None,
-    activity_regularizer=None, kernel_constraint=None, bias_constraint=None,
-    **kwargs)
-MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid',
-    data_format=None, name=None, **kwargs)
-GlobalMaxPooling2D(data_format=None, keepdims=False, **kwargs)
-RandomTranslation(height_factor, width_factor, fill_mode='reflect',
-    interpolation='bilinear', seed=None, fill_value=0.0, data_format=None,
-    **kwargs)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `Conv2D(filters)` | required | number of output channels | — |
-| `Conv2D(kernel_size)` | required | height and width of the window | 3 gave 6 from 8 pixels at `valid`, 5 gave 4 |
-| `Conv2D(padding)` | `'valid'` | `'valid'` shrinks the output, `'same'` keeps the size at stride 1 | `valid` loses the border |
-| `Conv2D(strides)` | `(1, 1)` | step of the window | 2 halved the output to 4 × 4 |
-| `MaxPooling2D(pool_size)` | `(2, 2)` | window of the maximum | — |
-| `GlobalMaxPooling2D(keepdims)` | `False` | maximum over all positions | 2% of the image-channel pairs changed their maximum under a 1-pixel shift |
-| `RandomTranslation(height_factor, width_factor)` | required | shift in a share of the size | 0.125 of 8 pixels is 1 pixel |
-| `RandomTranslation(fill_mode)` | `'reflect'` | what fills the free border | the book used `'constant'` so that the free column is zero |
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.layers.Conv2D` | Shapes and parameters | a sliding dot product. The weight count does not depend on the image size |
+| `keras.layers.MaxPooling2D` | Five models and one pixel | the maximum of each window. A window that does not fit is dropped |
+| `keras.layers.GlobalMaxPooling2D` | Five models and one pixel | the maximum of each channel over all positions |
+| `keras.layers.RandomTranslation` | Five models and one pixel | a random continuous shift, active in training |
 
 ## What you have now
 

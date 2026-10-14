@@ -131,6 +131,32 @@ The tables of this chapter are marked as output that varies. Between two runs of
 
 Read the table by rows. The result is not what transfer learning promises. At this budget, the frozen base does not beat the new network that starts from scratch. At 20 images for each class the frozen head is far below the other two. If you stopped here, you will conclude that transfer does not help. The next two sections show that this conclusion depends on the budget.
 
+The copy used three callables. `get_weights` and `set_weights` have their blocks in [Chapter 3](03-layers-and-weights.md), with the attribute `trainable`. `keras.optimizers.Adam` is in [Chapter 6](06-losses-metrics-optimizers.md).
+
+#### `keras.models.clone_model`
+
+```text
+keras.models.clone_model(
+    model,
+    input_tensors=None,
+    clone_function=None,
+    call_function=None,
+    recursive=False,
+    **kwargs,
+)
+```
+
+The function returns a new model with the same architecture. The new layers get new weights from their initializers.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `model` | required | the model to copy | the weights are not copied: the clone of the base had other weights. Copy them with `set_weights`, as this chapter does |
+| `input_tensors` | `None` | new inputs for the clone | — |
+| `clone_function` | `None` | a function that makes the new layer from each old layer | a function that returns its argument gives the same layer objects, and the clone then shares its weights with the original |
+| `call_function` | `None` | a function that calls each new layer, for a functional model | — |
+| `recursive` | `False` | apply `clone_function` inside nested models too | with `False`, the function saw the nested model `base` and `dense`. With `True`, it saw `conv2d`, `global_max_pooling2d` and `dense` |
+| `**kwargs` | — | no other keyword is accepted | `foo=1` raises `ValueError: Unexpected keyword argument(s): ('foo',)` |
+
 ## A different budget reverses the picture
 
 The first table has a hypothesis behind it that you can test. The frozen head is a single `Dense` layer on 32 inputs. With 200 images and a batch size of 16, one epoch is 13 steps. Then 40 epochs is 520 steps at a rate of 0.001. The hypothesis is that this is too little for the head. The next block gives the same three modes a learning rate of 0.01 and 100 epochs.
@@ -320,34 +346,11 @@ This is the reason that transfer can work with few labels. It is also the reason
 
 ## Reference
 
-```python
-import keras
-from examples.signatures import show
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.models.clone_model` | Three modes | the same architecture with new weights |
 
-show(("models.clone_model", keras.models.clone_model),
-     ("Model.get_weights", keras.Model.get_weights),
-     ("Model.set_weights", keras.Model.set_weights),
-     ("optimizers.Adam", keras.optimizers.Adam.__init__))
-```
-
-```text
-models.clone_model(model, input_tensors=None, clone_function=None,
-    call_function=None, recursive=False, **kwargs)
-Model.get_weights()
-Model.set_weights(weights)
-optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07,
-    amsgrad=False, weight_decay=None, clipnorm=None, clipvalue=None,
-    global_clipnorm=None, use_ema=False, ema_momentum=0.99,
-    ema_overwrite_frequency=None, loss_scale_factor=None,
-    gradient_accumulation_steps=None, name=None, **kwargs)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `clone_model(model)` | required | new model with the same architecture and new random weights | the clone has new weights; copy them with `set_weights` |
-| `model.trainable` | `True` | all weights of the model train, or none | change it before `compile`, or the change is ignored (Chapter 3) |
-| `set_weights(weights)` | required | assign a list of arrays, in layer order | a list with the wrong shapes raises an error |
-| `Adam(learning_rate)` | `0.001` | step size | a frozen head with 0.001 and 40 epochs had not converged |
+`trainable`, `get_weights` and `set_weights` are in [Chapter 3](03-layers-and-weights.md), and `keras.optimizers.Adam` is in [Chapter 6](06-losses-metrics-optimizers.md).
 
 ## What you have now
 

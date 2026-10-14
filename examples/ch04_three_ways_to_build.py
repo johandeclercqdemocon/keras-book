@@ -151,16 +151,6 @@ def block_5():
     print("clone from the config gives the same output:", same)
 
 
-# ---- block 6 --------------------------------------------------
-def block_6():
-    import keras
-    from keras import layers
-    from examples.signatures import show
-
-    show(("Sequential", keras.Sequential.__init__), ("Model", keras.Model.__init__),
-         ("Model.summary", keras.Model.summary), ("Input", keras.Input), layers.Concatenate)
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -173,5 +163,3 @@ if __name__ == "__main__":
     block_4()
     print('--- block 5')
     block_5()
-    print('--- block 6')
-    block_6()

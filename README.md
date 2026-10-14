@@ -7,15 +7,20 @@ networks with Keras 3. It teaches the library through small models that train in
 a line, a sequence-order task. Each of its 16 chapters ends with something that you built and tested.
 
 **Nothing in it is asserted that was not run.** The numbers in the text come from the code blocks of the same
-chapter. A checker runs every block and compares every printed output with the text.
+chapter. A checker runs every block and compares every printed output with the text. The numbers in the parameter
+tables come from the scripts in [`scripts/rows/`](scripts/rows/), one for each chapter, and their last output is in
+[`scripts/rows/output/`](scripts/rows/output/).
 
 Each chapter also carries
-two sections that most tutorials leave out. **How it works** explains the mechanism under the API, with one
-block that reproduces it. **Reference** prints the signatures of the functions that the chapter uses. The signatures come
-from the installed library. A table explains the parameters that matter, with a measured consequence for each.
+two things that most tutorials leave out. **How it works** explains the mechanism under the API, with one
+block that reproduces it. At the first use of each function, a `####` block prints its full signature from the installed
+library and explains **every** parameter in a table: the default, what it does, and what goes wrong, with a measured
+consequence or `—` when no run measured one. Later chapters link back to the block. A **Reference** section at the end
+of each chapter is an index of its functions.
 
 Where the book was wrong on its first draft, it says so: [Chapter 16](chapters/16-field-guide.md) lists the
-corrections. Where it did not measure something, it says that too: [Appendix A](appendices/A-described-not-built.md).
+corrections, and [Appendix B](appendices/B-what-went-wrong.md) lists what the parameter audit found. Where it did not
+measure something, it says that too: [Appendix A](appendices/A-described-not-built.md).
 
 ## What it was measured on
 
@@ -70,11 +75,14 @@ says what the second one does and what it does not do.
 ## Check it
 
 ```bash
-uv run python scripts/check_snippets.py            # links, headers, every python block, every printed output
-python3 scripts/audit_numbers.py --tables          # parameter tables against the printed signatures
+uv run python scripts/check_snippets.py            # links, headers, blocks, outputs, signatures, every parameter row
+uv run python scripts/check_snippets.py --fast     # the same without running the blocks
 python3 scripts/audit_numbers.py                   # numbers in prose that no output contains
+uv run python scripts/audit_examples.py            # samples that break the four sample rules
+PYTHON=.venv/bin/python scripts/rows/run_all.sh    # rerun the evidence of every parameter table
 ```
 
-The first command runs about a hundred TensorFlow processes and takes a while. Run it on an idle machine.
+At the last full run, the checker ran 123 Python blocks and compared 117 printed outputs. It checked the signature, the defaults and one row for each parameter of 66 callables: 418 rows. The run took 26 minutes on one CPU, so run it on an idle machine.
+
 Printed values are rounded to 3 or 4 decimals. Two runs of the same training can differ in the eighth decimal of a
 loss. The book compares at the precision that it prints.

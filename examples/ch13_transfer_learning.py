@@ -228,17 +228,6 @@ def block_5():
         print(f"{mode:9s} trainable weights {trainable:5d} of {model.count_params()}, base weights changed: {moved}")
 
 
-# ---- block 6 --------------------------------------------------
-def block_6():
-    import keras
-    from examples.signatures import show
-
-    show(("models.clone_model", keras.models.clone_model),
-         ("Model.get_weights", keras.Model.get_weights),
-         ("Model.set_weights", keras.Model.set_weights),
-         ("optimizers.Adam", keras.optimizers.Adam.__init__))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -251,5 +240,3 @@ if __name__ == "__main__":
     block_4()
     print('--- block 5')
     block_5()
-    print('--- block 6')
-    block_6()

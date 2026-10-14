@@ -74,6 +74,8 @@ A book that shows its corrections is easier to trust. Each item below was found 
 | 15 | a `Dense` layer without a seed fails under determinism | the shuffle in `fit` is the random operation; building the layer did not fail |
 | all | outputs of CNN training are repeatable with a seed | 2 weight hashes in 8 runs; `TF_DETERMINISTIC_OPS=1` narrowed the loss spread from 1.16e-05 to 1.00e-08 and did not remove it |
 
+A second pass gave every parameter of every signature a row and ran each claim in the rows. [Appendix B](../appendices/B-what-went-wrong.md) lists what that pass found.
+
 ## What this book did not measure
 
 - **Speed.** All runs were on one CPU. `jit_compile` was refused for the model of Chapter 15, and no timing is reported.
@@ -81,6 +83,68 @@ A book that shows its corrections is easier to trust. Each item below was found 
 - **Accelerators.** No GPU or TPU was used. Mixed precision was run for its numbers and not for its speed.
 - **Large data.** The largest training set has 1,347 images of 8 × 8 pixels. The traps are the same at scale. The sizes of the effects are not.
 - **Other versions.** Every signature and every message comes from Keras 3.15.1 with TensorFlow 2.21.0. A later version can differ.
+
+## How it works
+
+This chapter has no new function. The book has one mechanism that holds the other chapters together: each callable has one `####` block, in the chapter that first uses it, and later chapters link back to it. The checker of the book enforces this. The next block repeats the main part of that check. It finds every block, and it asks the installed Keras for each name.
+
+```python
+import pathlib
+import re
+
+from examples.signatures import parameters, resolve
+
+blocks = {}
+for chapter in sorted(pathlib.Path("chapters").glob("*.md")):
+    names = re.findall(r"^#### `(keras\.[\w.]+)`", chapter.read_text(encoding="utf-8"), re.M)
+    for name in names:
+        blocks.setdefault(name, []).append(chapter.name[:2])
+
+rows = sum(len(parameters(resolve(name))) for name in blocks)
+print("callables with a block:", len(blocks))
+print("callables with more than one block:", [n for n, where in blocks.items() if len(where) > 1])
+print("parameters, so table rows:", rows)
+```
+
+```text
+callables with a block: 66
+callables with more than one block: []
+parameters, so table rows: 418
+```
+
+The invariant is: *one name, one block, one row for each parameter.* A name with two blocks is a fault, because the two tables can disagree. A name that the installed Keras does not have is a fault, because the block describes another version.
+
+## Reference
+
+This chapter has no API of its own. The next block prints the callables of the book by chapter, from the `####` blocks, so that you can find a name:
+
+```python
+import pathlib
+import re
+
+for chapter in sorted(pathlib.Path("chapters").glob("*.md")):
+    names = re.findall(r"^#### `keras\.([\w.]+)`", chapter.read_text(encoding="utf-8"), re.M)
+    if names:
+        print(f"{chapter.name[:2]}: {', '.join(names)}")
+```
+
+```text
+01: Input, layers.Dense, Sequential, Model.compile, Model.fit, Model.predict, Model.evaluate, Model.summary
+02: ops.convert_to_tensor, ops.convert_to_numpy, ops.cast, utils.set_random_seed, random.normal, random.SeedGenerator
+03: layers.Layer, layers.Layer.build, layers.Layer.add_weight, layers.Layer.get_config, layers.Layer.get_weights, layers.Layer.set_weights, layers.BatchNormalization
+04: Model, layers.Concatenate
+05: layers.Normalization, layers.Normalization.adapt, utils.PyDataset
+06: losses.SparseCategoricalCrossentropy, metrics.SparseTopKCategoricalAccuracy, utils.to_categorical, optimizers.SGD, optimizers.Adam, optimizers.schedules.CosineDecay
+07: callbacks.EarlyStopping, callbacks.ModelCheckpoint, callbacks.ReduceLROnPlateau, callbacks.TerminateOnNaN, callbacks.Callback
+08: layers.Dropout, regularizers.L2, layers.GaussianNoise
+09: losses.Loss, metrics.Metric, metrics.Metric.add_variable, Model.compute_loss, Model.compute_metrics, optimizers.Optimizer.apply
+10: layers.Conv2D, layers.MaxPooling2D, layers.GlobalMaxPooling2D, layers.RandomTranslation
+11: layers.TextVectorization, layers.Embedding, layers.Conv1D, layers.GRU
+12: ops.dot_product_attention, layers.MultiHeadAttention, layers.MultiHeadAttention.call, layers.LayerNormalization
+13: models.clone_model
+14: Model.save, Model.save_weights, Model.load_weights, saving.load_model, saving.register_keras_serializable, Model.export
+15: mixed_precision.set_global_policy
+```
 
 ## What you have now
 

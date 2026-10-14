@@ -35,6 +35,46 @@ vocabulary: ['', '[UNK]', 'the', 'sat', 'cat', 'on', 'mat', 'dog', 'a']
 
 Id 0 is the padding value, and id 1 is the unknown word. The word `sofa` is not in the vocabulary, so it becomes 1. The layer sorts the vocabulary by frequency, so `the` has id 2. The output has a fixed length of 6: the short sentence is padded with zeros at the end.
 
+#### `keras.layers.TextVectorization`
+
+```text
+keras.layers.TextVectorization(
+    max_tokens=None,
+    standardize='lower_and_strip_punctuation',
+    split='whitespace',
+    ngrams=None,
+    output_mode='int',
+    output_sequence_length=None,
+    pad_to_max_tokens=False,
+    vocabulary=None,
+    idf_weights=None,
+    sparse=False,
+    ragged=False,
+    encoding='utf-8',
+    name=None,
+    **kwargs,
+)
+```
+
+The layer turns strings into token ids, or into counts. `adapt` builds the vocabulary.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `max_tokens` | `None` | the largest size of the vocabulary | the size includes `''` and `[UNK]`: with 5, only 3 words were kept, and the others became 1 |
+| `standardize` | `'lower_and_strip_punctuation'` | the cleanup of each string | with `None`, `"The Cat!"` gave the tokens `The` and `Cat!`, and not `the` and `cat` |
+| `split` | `'whitespace'` | how to cut a string into tokens | `"character"` makes one token for each character |
+| `ngrams` | `None` | add groups of `n` neighbor tokens to the vocabulary | with 2, the vocabulary of the three sentences grew from 9 to 17 entries |
+| `output_mode` | `'int'` | `"int"`, `"multi_hot"`, `"count"`, `"one_hot"` or `"tf_idf"` | `"multi_hot"` gave one column for each entry except `''`: shape `(1, 8)` for a vocabulary of 9 |
+| `output_sequence_length` | `None` | pad or cut each output to this length | with `None`, the length is the longest string of each batch: `(1, 2)` for `"a cat"` and `(1, 6)` for a longer string. With a mode other than `"int"`, it raises `ValueError` |
+| `pad_to_max_tokens` | `False` | give the counting modes `max_tokens` columns | — |
+| `vocabulary` | `None` | a fixed vocabulary, so that no `adapt` is necessary | `["cat", "dog"]` became ids 2 and 3, after `''` and `[UNK]` |
+| `idf_weights` | `None` | the weights for `"tf_idf"` with a fixed vocabulary | — |
+| `sparse` | `False` | return sparse counts. TensorFlow back end only | — |
+| `ragged` | `False` | return a ragged tensor with no padding | with `True`, the output is a `RaggedTensor`, which only TensorFlow has |
+| `encoding` | `'utf-8'` | the text encoding | — |
+| `name` | `None` | the name of the layer | — |
+| `**kwargs` | — | the other arguments of `Layer` | — |
+
 An `Embedding` layer then turns each id into a vector of learned numbers. An embedding with a vocabulary of 10 and a width of 16 is a table of 10 × 16 = 160 weights.
 
 ```python
@@ -61,6 +101,40 @@ same id, same vector: True
 ```
 
 The output has one more axis than the input: the width of the embedding. The same id always gives the same vector. The embedding does not know the position of a token. Position has to come from a layer that reads the sequence.
+
+#### `keras.layers.Embedding`
+
+```text
+keras.layers.Embedding(
+    input_dim,
+    output_dim,
+    embeddings_initializer='uniform',
+    embeddings_regularizer=None,
+    embeddings_constraint=None,
+    mask_zero=False,
+    weights=None,
+    lora_rank=None,
+    lora_alpha=None,
+    quantization_config=None,
+    **kwargs,
+)
+```
+
+The layer is a table with one row of `output_dim` numbers for each id. A call returns the rows of the given ids.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `input_dim` | required | the number of ids: the largest id plus 1 | on the TensorFlow CPU back end, the id 10 in a table of 10 raised `InvalidArgumentError`. The id -1 returned a vector, with no error |
+| `output_dim` | required | the length of each vector | — |
+| `embeddings_initializer` | `'uniform'` | the start values | — (the values were from -0.05 to 0.05) |
+| `embeddings_regularizer` | `None` | a penalty on the table | — |
+| `embeddings_constraint` | `None` | a rule for the table | — |
+| `mask_zero` | `False` | make a mask that is `False` where the id is 0 | with `True`, the id 0 means padding, and `[[3, 0, 5]]` gave the mask `[[True, False, True]]`. The section Padding and masks shows the effect |
+| `weights` | `None` | a start table, as a list with one array | — (a table of ones gave `[1.0, 1.0]` for every id) |
+| `lora_rank` | `None` | train a low-rank update and freeze the table, as in `Dense` | — |
+| `lora_alpha` | `None` | the scale of the low-rank update | — |
+| `quantization_config` | `None` | settings to store the table with fewer bits | — |
+| `**kwargs` | — | the arguments of `Layer` | the Keras 2 argument `input_length=5` is accepted with a warning, "Argument input_length is deprecated. Just remove it", and it has no effect: an input of 3 ids still gave 3 vectors |
 
 ## A task in which only order matters
 
@@ -131,6 +205,116 @@ lstm            6465      1.000     1.000
 The bag model scores 0.502 on the test set, which is chance. Its training accuracy is also near chance. It cannot represent the answer. The `flatten` model scores 1.000, because the length is fixed and it gives each position its own weights. The three recurrent models also score 1.000.
 
 The `conv` model is in between at 0.805. This is the interesting case. It sees windows of 3 tokens. A filter of width 3 has a reach of 3 tokens, and it has no memory of earlier windows. The next block tests this.
+
+The models used two sequence layers.
+
+#### `keras.layers.Conv1D`
+
+```text
+keras.layers.Conv1D(
+    filters,
+    kernel_size,
+    strides=1,
+    padding='valid',
+    data_format=None,
+    dilation_rate=1,
+    groups=1,
+    activation=None,
+    use_bias=True,
+    kernel_initializer='glorot_uniform',
+    bias_initializer='zeros',
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    kernel_constraint=None,
+    bias_constraint=None,
+    **kwargs,
+)
+```
+
+The layer slides `filters` kernels of the length `kernel_size` along the time axis. The parameters from `data_format` to `**kwargs` have the same meaning as in `Conv2D` ([Chapter 10](10-convolutional-networks.md)).
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filters` | required | the number of kernels | — |
+| `kernel_size` | required | the length of a kernel: its reach in steps | — |
+| `strides` | `1` | the step of the window | with 2, 10 steps gave 4 with `"valid"` |
+| `padding` | `'valid'` | `"valid"`, `"same"` or `"causal"` | `"same"` lets an output see the next step: a change at step 7 changed the output at step 6. `"causal"` keeps 10 steps and the outputs before step 7 did not change |
+| `data_format` | `None` | as in `Conv2D` | — |
+| `dilation_rate` | `1` | the gap between the taps | with 2, a kernel of 3 reaches 5 steps: 10 steps gave 6 with `"valid"` |
+| `groups` | `1` | as in `Conv2D` | — |
+| `activation` | `None` | the function on the output | — |
+| `use_bias` | `True` | add a bias for each filter | — |
+| `kernel_initializer` | `'glorot_uniform'` | the start values of the kernel | — |
+| `bias_initializer` | `'zeros'` | the start values of the bias | — |
+| `kernel_regularizer` | `None` | a penalty on the kernel | — |
+| `bias_regularizer` | `None` | a penalty on the bias | — |
+| `activity_regularizer` | `None` | a penalty on the output | — |
+| `kernel_constraint` | `None` | a rule for the kernel | — |
+| `bias_constraint` | `None` | a rule for the bias | — |
+| `**kwargs` | — | the arguments of `Layer` | — |
+
+#### `keras.layers.GRU`
+
+```text
+keras.layers.GRU(
+    units,
+    activation='tanh',
+    recurrent_activation='sigmoid',
+    use_bias=True,
+    kernel_initializer='glorot_uniform',
+    recurrent_initializer='orthogonal',
+    bias_initializer='zeros',
+    kernel_regularizer=None,
+    recurrent_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    kernel_constraint=None,
+    recurrent_constraint=None,
+    bias_constraint=None,
+    dropout=0.0,
+    recurrent_dropout=0.0,
+    seed=None,
+    return_sequences=False,
+    return_state=False,
+    go_backwards=False,
+    stateful=False,
+    unroll=False,
+    reset_after=True,
+    use_cudnn='auto',
+    **kwargs,
+)
+```
+
+The layer reads the sequence one step at a time and keeps a state of `units` numbers. Gates decide how much of the state each step keeps.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `units` | required | the length of the state and of the output | — |
+| `activation` | `'tanh'` | the function of the new candidate state | — |
+| `recurrent_activation` | `'sigmoid'` | the function of the gates | — |
+| `use_bias` | `True` | add biases | — |
+| `kernel_initializer` | `'glorot_uniform'` | the start values of the input weights | — |
+| `recurrent_initializer` | `'orthogonal'` | the start values of the state weights | — |
+| `bias_initializer` | `'zeros'` | the start values of the biases | — |
+| `kernel_regularizer` | `None` | a penalty on the input weights | — |
+| `recurrent_regularizer` | `None` | a penalty on the state weights | — |
+| `bias_regularizer` | `None` | a penalty on the biases | — |
+| `activity_regularizer` | `None` | a penalty on the output | — |
+| `kernel_constraint` | `None` | a rule for the input weights | — |
+| `recurrent_constraint` | `None` | a rule for the state weights | — |
+| `bias_constraint` | `None` | a rule for the biases | — |
+| `dropout` | `0.0` | dropout on the inputs, in training only | — (in inference, two calls gave the same output) |
+| `recurrent_dropout` | `0.0` | dropout on the state, in training only | — |
+| `seed` | `None` | the seed of the dropout | — |
+| `return_sequences` | `False` | return the output of every step, `(batch, steps, units)` | with `False`, the output is the last step only, `(batch, units)`. A second GRU on that output raised `ValueError: ... expected ndim=3, found ndim=2` |
+| `return_state` | `False` | also return the last state | the result is a list of 2 tensors. For a GRU, the output and the state are the same numbers |
+| `go_backwards` | `False` | read the sequence from the end | the result equals a forward GRU on the reversed input. With `return_sequences=True`, the outputs are in reversed time order |
+| `stateful` | `False` | keep the state from one batch to the next | without a fixed batch size, it raises `ValueError: When using stateful=True in a RNN, the batch size must be static`. With it, two calls on the same batch gave different outputs |
+| `unroll` | `False` | unroll the loop into a graph. For short sequences only | — |
+| `reset_after` | `True` | apply the reset gate after the matrix product | the weight count changes: 4,800 with `True` and 4,704 with `False` for 16 inputs and 32 units. `set_weights` from one form into the other raised `ValueError`: the bias has the shape `(2, 96)` in one and `(96,)` in the other |
+| `use_cudnn` | `'auto'` | use the NVIDIA cuDNN kernel when it can | `True` on a CPU raises `ValueError` |
+| `**kwargs` | — | the arguments of `Layer` | — |
 
 ## The reach of a filter
 
@@ -264,51 +448,12 @@ The invariant is this: the output at a position is a function of the id and noth
 
 ## Reference
 
-```python
-from keras import layers
-from examples.signatures import show
-
-show(layers.Embedding, layers.GRU, layers.Conv1D, layers.TextVectorization)
-```
-
-```text
-Embedding(input_dim, output_dim, embeddings_initializer='uniform',
-    embeddings_regularizer=None, embeddings_constraint=None, mask_zero=False,
-    weights=None, lora_rank=None, lora_alpha=None, quantization_config=None,
-    **kwargs)
-GRU(units, activation='tanh', recurrent_activation='sigmoid', use_bias=True,
-    kernel_initializer='glorot_uniform', recurrent_initializer='orthogonal',
-    bias_initializer='zeros', kernel_regularizer=None,
-    recurrent_regularizer=None, bias_regularizer=None,
-    activity_regularizer=None, kernel_constraint=None,
-    recurrent_constraint=None, bias_constraint=None, dropout=0.0,
-    recurrent_dropout=0.0, seed=None, return_sequences=False,
-    return_state=False, go_backwards=False, stateful=False, unroll=False,
-    reset_after=True, use_cudnn='auto', **kwargs)
-Conv1D(filters, kernel_size, strides=1, padding='valid', data_format=None,
-    dilation_rate=1, groups=1, activation=None, use_bias=True,
-    kernel_initializer='glorot_uniform', bias_initializer='zeros',
-    kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
-    kernel_constraint=None, bias_constraint=None, **kwargs)
-TextVectorization(max_tokens=None, standardize='lower_and_strip_punctuation',
-    split='whitespace', ngrams=None, output_mode='int',
-    output_sequence_length=None, pad_to_max_tokens=False, vocabulary=None,
-    idf_weights=None, sparse=False, ragged=False, encoding='utf-8', name=None,
-    **kwargs)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `Embedding(input_dim)` | required | number of ids, which is the vocabulary size | the table has `input_dim × output_dim` weights |
-| `Embedding(output_dim)` | required | width of each vector | — |
-| `Embedding(mask_zero)` | `False` | treat id 0 as padding and pass a mask on | `False` changed a GRU output by 0.0458 when two zeros were added |
-| `GRU(units)` | required | size of the state | weights are `3 × (d × units + units² + 2 × units)`: 4,800 for 16 and 32 |
-| `GRU(reset_after)` | `True` | two bias vectors for each gate | the count above needs `True` |
-| `GRU(return_sequences)` | `False` | return the state at every step | — |
-| `Conv1D(kernel_size)` | required | tokens in one window | the reach: 1.000 inside 3 tokens, 0.652 to 0.858 outside |
-| `Conv1D(padding)` | `'valid'` | `'valid'` shrinks the output | — |
-| `TextVectorization(max_tokens)` | `None` | size limit of the vocabulary | id 0 is padding and id 1 is unknown |
-| `TextVectorization(output_sequence_length)` | `None` | pad or cut to this length | the short sentence was padded with zeros at the end |
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.layers.TextVectorization` | From text to numbers | strings to ids. The ids 0 and 1 are padding and unknown |
+| `keras.layers.Embedding` | From text to numbers | one learned vector for each id |
+| `keras.layers.Conv1D` | A task in which only order matters | a filter along time, with a reach of `kernel_size` steps |
+| `keras.layers.GRU` | A task in which only order matters | a state that reads the sequence step by step |
 
 ## What you have now
 

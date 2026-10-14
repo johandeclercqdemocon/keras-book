@@ -162,14 +162,6 @@ def block_6():
     print("same id at two positions gives the same row:", bool(np.array_equal(lookup[0, 1], lookup[0, 3])))
 
 
-# ---- block 7 --------------------------------------------------
-def block_7():
-    from keras import layers
-    from examples.signatures import show
-
-    show(layers.Embedding, layers.GRU, layers.Conv1D, layers.TextVectorization)
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -184,5 +176,3 @@ if __name__ == "__main__":
     block_5()
     print('--- block 6')
     block_6()
-    print('--- block 7')
-    block_7()

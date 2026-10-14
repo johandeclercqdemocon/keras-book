@@ -12,7 +12,7 @@ def block_1():
     ones = ops.ones((2, 3))
     print(type(ones).__name__, ones.dtype, ops.shape(ones))
 
-    array = np.arange(6, dtype="float32").reshape(2, 3)
+    array = np.array([[0.5, 1.5, 2.5], [3.5, 4.5, 5.5]], dtype="float32")
     tensor = ops.convert_to_tensor(array)
     print(ops.is_tensor(array), ops.is_tensor(tensor))
     print(type(ops.convert_to_numpy(tensor)).__name__)
@@ -108,17 +108,6 @@ def block_5():
     print("a draw does not change an integer seed:", keras.random.normal((1,), seed=7).shape == (1,))
 
 
-# ---- block 6 --------------------------------------------------
-def block_6():
-    import keras
-    from keras import ops
-    from examples.signatures import show
-
-    show(("ops.convert_to_tensor", ops.convert_to_tensor), ("ops.cast", ops.cast),
-         ("ops.convert_to_numpy", ops.convert_to_numpy), ("random.normal", keras.random.normal),
-         keras.random.SeedGenerator, ("utils.set_random_seed", keras.utils.set_random_seed))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -131,5 +120,3 @@ if __name__ == "__main__":
     block_4()
     print('--- block 5')
     block_5()
-    print('--- block 6')
-    block_6()

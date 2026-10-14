@@ -64,6 +64,24 @@ subclassed equals sequential: True
 
 All three have 195 parameters: 8 × 16 + 16 for the first layer and 16 × 3 + 3 for the second. After the weights are copied, the three models give identical outputs. The styles are three ways to describe one function.
 
+`keras.Sequential` and `keras.Input` have their blocks in [Chapter 1](01-the-first-model.md). The functional and the subclassed models use the class `keras.Model`.
+
+#### `keras.Model`
+
+```text
+keras.Model(
+    *args,
+    **kwargs,
+)
+```
+
+The class makes a functional model from inputs and outputs, or it is the base class of a subclassed model. Its constructor takes `*args` and `**kwargs` and gives them to the right form.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `*args` | — | `inputs` and `outputs`, by position | a third positional argument, such as a name, raises `TypeError: Layer.__init__() takes 1 positional argument but 4 were given` |
+| `**kwargs` | — | `inputs`, `outputs`, `name` and `trainable` by keyword. A subclass passes its `**kwargs` here | an unknown keyword is accepted with no error: `foo=1` was ignored. `inputs=` with no `outputs=` raises `ValueError: Unrecognized keyword arguments passed to Model: {'inputs': ...}`, which does not name the missing `outputs` |
+
 ## What Keras knows before data arrives
 
 The styles differ in when the weights exist. The next block builds each model and asks for the summary before the model sees data.
@@ -151,6 +169,22 @@ a second Dense(8) on 4 inputs would add: 40 parameters
 ```
 
 The shared layer appears once in the layer list and its 40 parameters count once: 108 in total is 40 + 17 + 51. Both inputs go through the same weights. This is the idea of a Siamese network: one function, applied twice.
+
+#### `keras.layers.Concatenate`
+
+```text
+keras.layers.Concatenate(
+    axis=-1,
+    **kwargs,
+)
+```
+
+The layer joins a list of tensors along one axis.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `axis` | `-1` | the axis to join along | all the other axes must be equal. `(None, 8)` and `(None, 3)` gave `(None, 11)`, and with `axis=0` they raised `ValueError: A Concatenate layer requires inputs with matching shapes except for the concatenation axis` |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
 
 The model has two outputs. Keras needs a loss for each one. The `compile` call takes a dictionary keyed by the output names.
 
@@ -242,35 +276,12 @@ The configuration lists the three layers in order, and a model built from it is 
 
 ## Reference
 
-```python
-import keras
-from keras import layers
-from examples.signatures import show
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.Model` | The same network, three times | a functional model from inputs and outputs, or the base of a subclass |
+| `keras.layers.Concatenate` | Branches, shared layers and two outputs | one tensor from several, joined along one axis |
 
-show(("Sequential", keras.Sequential.__init__), ("Model", keras.Model.__init__),
-     ("Model.summary", keras.Model.summary), ("Input", keras.Input), layers.Concatenate)
-```
-
-```text
-Sequential(layers=None, trainable=True, name=None)
-Model(*args, **kwargs)
-Model.summary(line_length=None, positions=None, print_fn=None,
-    expand_nested=False, show_trainable=False, layer_range=None)
-Input(shape=None, batch_size=None, dtype=None, sparse=None, ragged=None,
-    batch_shape=None, name=None, tensor=None, optional=False)
-Concatenate(axis=-1, **kwargs)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `Sequential(layers)` | `None` | list of layers in order | without an `Input` the model is built at the first call (Chapter 4) |
-| `Model(inputs, outputs)` | — | the signature shows `*args, **kwargs`: pass `inputs` and `outputs` for a graph, nothing for a subclass | a subclass must call `super().__init__()` |
-| `Model(name)` | — | name of the model, passed as a keyword | — |
-| `Input(name)` | `None` | key for a dictionary of inputs | name inputs when a model has more than one |
-| `Input(shape)` | `None` | shape without the batch axis | — |
-| `Concatenate(axis)` | `-1` | axis along which the inputs join | inputs must agree on all other axes |
-| `summary(line_length)` | `None` | width of the printed table | an unbuilt subclassed model prints `?` and 0 parameters |
-| `summary(expand_nested)` | `False` | show the layers of nested models | — |
+`keras.Sequential`, `keras.Input` and `keras.Model.summary` are in [Chapter 1](01-the-first-model.md).
 
 ## What you have now
 

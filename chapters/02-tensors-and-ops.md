@@ -24,7 +24,7 @@ from keras import ops
 ones = ops.ones((2, 3))
 print(type(ones).__name__, ones.dtype, ops.shape(ones))
 
-array = np.arange(6, dtype="float32").reshape(2, 3)
+array = np.array([[0.5, 1.5, 2.5], [3.5, 4.5, 5.5]], dtype="float32")
 tensor = ops.convert_to_tensor(array)
 print(ops.is_tensor(array), ops.is_tensor(tensor))
 print(type(ops.convert_to_numpy(tensor)).__name__)
@@ -37,6 +37,42 @@ ndarray
 ```
 
 The first line shows the class of the tensor on this back end. The second line shows that a NumPy array is not a tensor. The third line shows the way back: `ops.convert_to_numpy` returns a NumPy array. Use it whenever you print, plot or compare a result.
+
+The array has the type `float32` because that is the default type of Keras. A NumPy array of `float64`, the default type of NumPy, stays `float64` in the tensor. The table below shows this result.
+
+#### `keras.ops.convert_to_tensor`
+
+```text
+keras.ops.convert_to_tensor(
+    x,
+    dtype=None,
+    sparse=None,
+    ragged=None,
+)
+```
+
+The function returns a tensor of the active back end.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | a NumPy array, a list or a number | the type comes from `x`, not from `keras.config.floatx()`: a list of integers gives `int32`, a list of floats gives `float32`, and a NumPy `float64` array stays `float64` |
+| `dtype` | `None` | the type of the tensor | the value is converted with no error: `[1.7]` as `int32` is `[1]`, and `[300]` as `uint8` is `[44]` |
+| `sparse` | `None` | keep a sparse input sparse | — |
+| `ragged` | `None` | keep a ragged input ragged. TensorFlow back end only | — |
+
+#### `keras.ops.convert_to_numpy`
+
+```text
+keras.ops.convert_to_numpy(
+    x,
+)
+```
+
+The function returns a NumPy array with the values of the tensor.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | a tensor | — (the result owns its memory and is writable. A write to the NumPy array that made a tensor did not change the tensor) |
 
 ## Write once with `keras.ops`
 
@@ -99,6 +135,22 @@ float16 70000: [inf] largest finite: 6.55e+04
 
 The value 0.1 becomes 0.0999755859375 in 16 bits. The error is 2.44e-05. A sum of `uint8` values wraps: 200 + 100 is 300, and 300 modulo 256 is 44. No error is raised. The `float16` type has a largest finite value of 65504, so 70000 becomes infinity.
 
+#### `keras.ops.cast`
+
+```text
+keras.ops.cast(
+    x,
+    dtype,
+)
+```
+
+The function returns the values of `x` in the type `dtype`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | a tensor, an array or a number | — |
+| `dtype` | required | the new type, as a string such as `"float16"` | the conversion never raises: `uint8` 200 + 100 gives 44, `float16` 70000 gives `inf`, and `[1.7, -1.7]` as `int32` gives `[1, -1]`. A name that is not a type raises `ValueError: Invalid dtype` |
+
 These three results are the reasons for care when you train with 16-bit numbers or quantize a model to 8 bits. [Chapter 15](15-performance-and-reproducibility.md) measures what mixed precision costs and what it saves.
 
 ## Random numbers need a seed policy
@@ -152,6 +204,60 @@ Setting the global seed again restarts the stream, so the two values are equal. 
 
 The third result is the trap. A custom layer that calls `keras.random.normal(shape, seed=7)` inside `call` adds the same noise to every batch. Use a `SeedGenerator`, which is what the built-in `Dropout` layer does.
 
+#### `keras.utils.set_random_seed`
+
+```text
+keras.utils.set_random_seed(
+    seed,
+)
+```
+
+The function sets the seed of Python, NumPy and the back end with one call.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `seed` | required | an integer from 0 to 2**32 - 1 | `1.5`, `None` and `"7"` raise `ValueError: Expected seed argument to be an integer`. `-1` raises `ValueError: Seed must be between 0 and 2**32 - 1` |
+
+#### `keras.random.normal`
+
+```text
+keras.random.normal(
+    shape,
+    mean=0.0,
+    stddev=1.0,
+    dtype=None,
+    seed=None,
+)
+```
+
+The function returns a tensor of numbers from a normal distribution.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `shape` | required | the shape of the result, as a tuple | the integer `3` in place of `(3,)` raises `InvalidArgumentError` from TensorFlow, with no Keras message |
+| `mean` | `0.0` | the mean | — (100,000 draws with mean 5 and standard deviation 2 gave 5.002 and 1.999) |
+| `stddev` | `1.0` | the standard deviation | — |
+| `dtype` | `None` | the type. With `None`, `float32` | — |
+| `seed` | `None` | `None` uses the global generator that `set_random_seed` sets. An integer is stateless. A `SeedGenerator` is stateful | an integer seed gives equal draws on every call (this chapter) |
+
+#### `keras.random.SeedGenerator`
+
+```text
+keras.random.SeedGenerator(
+    seed=None,
+    name=None,
+    **kwargs,
+)
+```
+
+The class holds a seed and a counter. Each draw that uses it moves the counter.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `seed` | `None` | the start seed. With `None`, a seed from the global generator | with `None`, two generators made one after the other give different draws. After the same `set_random_seed(3)`, they repeat |
+| `name` | `None` | the name of the generator, such as `seed_generator_6` | — |
+| `**kwargs` | — | no other keyword is accepted | `foo=2` raises `ValueError: Unrecognized keyword arguments: {'foo': 2}` |
+
 ## Four rules
 
 The chapter reduces to four rules. Each rule has a measurement above.
@@ -203,35 +309,14 @@ The invariant is: *the numbers are a function of the seed and the counter.* A ge
 
 ## Reference
 
-```python
-import keras
-from keras import ops
-from examples.signatures import show
-
-show(("ops.convert_to_tensor", ops.convert_to_tensor), ("ops.cast", ops.cast),
-     ("ops.convert_to_numpy", ops.convert_to_numpy), ("random.normal", keras.random.normal),
-     keras.random.SeedGenerator, ("utils.set_random_seed", keras.utils.set_random_seed))
-```
-
-```text
-ops.convert_to_tensor(x, dtype=None, sparse=None, ragged=None)
-ops.cast(x, dtype)
-ops.convert_to_numpy(x)
-random.normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None)
-SeedGenerator(seed=None, name=None, **kwargs)
-utils.set_random_seed(seed)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `convert_to_tensor(x)` | required | NumPy array or list to a back end tensor | — |
-| `convert_to_tensor(dtype)` | `None` | type of the result | — |
-| `cast(x, dtype)` | required | change the type | `uint8` 200 + 100 gives 44, `float16` 70000 gives `inf` (Chapter 2) |
-| `convert_to_numpy(x)` | required | tensor to NumPy array | print and plot need it |
-| `random.normal(shape)` | required | tensor of random numbers | — |
-| `random.normal(seed)` | `None` | `None`: the global generator that `set_random_seed` sets; integer: stateless; `SeedGenerator`: stateful | an integer seed gives equal draws on every call |
-| `SeedGenerator(seed)` | `None` | start state of a stream of seeds | two draws differ, a new generator repeats the stream |
-| `set_random_seed(seed)` | required | seed Python, NumPy and the back end together | call it once at the start of a script |
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.ops.convert_to_tensor` | A tensor belongs to a back end | a tensor of the active back end, with the type of the input |
+| `keras.ops.convert_to_numpy` | A tensor belongs to a back end | a NumPy array that owns its memory |
+| `keras.ops.cast` | Number types decide what a number is | a new type, with no error on overflow |
+| `keras.utils.set_random_seed` | Random numbers need a seed policy | one seed for Python, NumPy and the back end |
+| `keras.random.normal` | Random numbers need a seed policy | normal numbers from the global, an integer or a stateful seed |
+| `keras.random.SeedGenerator` | Random numbers need a seed policy | a seed and a counter that moves on each draw |
 
 ## What you have now
 

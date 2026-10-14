@@ -61,6 +61,64 @@ The archive has three files: a small `metadata.json`, a `config.json` that rebui
 
 One detail is easy to miss. In the config, the layers are named `hidden` and `out`. In the weights file, the groups are named `dense` and `dense_1`. The file keys the arrays by the class of the layer and its order, and not by the name that you gave.
 
+#### `keras.Model.save`
+
+```text
+keras.Model.save(
+    filepath,
+    overwrite=True,
+    zipped=None,
+    **kwargs,
+)
+```
+
+The method writes the model to a `.keras` archive: the config, the weights and the optimizer state.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | the path. It must end in `.keras`, or in `.h5` for the old format | a path with no suffix raises `ValueError: Invalid filepath extension for saving`. A path that ends in `.h5` is accepted and writes the old format |
+| `overwrite` | `True` | replace a file that exists | with `False` and an existing file, Keras asks a question on the terminal. With no terminal, as in a job, the call raised `EOFError: EOF when reading a line` |
+| `zipped` | `None` | write a zip archive. With `None`, `True` for `.keras` | `False` with a path that ends in `.keras` raises `ValueError`. With no suffix, it wrote a folder with `config.json`, `metadata.json`, `model.weights.h5` and `assets` |
+| `**kwargs` | — | arguments of the old formats | the Keras 2 argument `save_format="tf"` was accepted with no error, and the file was a `.keras` archive all the same |
+
+To write the arrays only, use `save_weights`. The architecture then comes from your code, not from the file.
+
+#### `keras.Model.save_weights`
+
+```text
+keras.Model.save_weights(
+    filepath,
+    overwrite=True,
+    max_shard_size=None,
+)
+```
+
+The method writes the weights, without the config, to an HDF5 file.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | the path. It must end in `.weights.h5` | `w.h5` raises `ValueError: The filename must end in .weights.h5` |
+| `overwrite` | `True` | replace a file that exists | — |
+| `max_shard_size` | `None` | the largest size of one file, in GB | with a very small size, Keras wrote `s.weights.json` and two files `s_00000.weights.h5` and `s_00001.weights.h5`. Keep the files together |
+
+#### `keras.Model.load_weights`
+
+```text
+keras.Model.load_weights(
+    filepath,
+    skip_mismatch=False,
+    **kwargs,
+)
+```
+
+The method reads weights into a model that has the same architecture.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | a `.weights.h5` file, or a `.keras` archive | — (a `.keras` file also worked) |
+| `skip_mismatch` | `False` | leave the layers whose shapes do not fit | with `False`, a layer of 3 units and a file of 2 raised `ValueError: A total of 1 objects could not be loaded`. With `True`, the call returned with no error, and that layer kept its old weights |
+| `**kwargs` | — | arguments of other formats | — |
+
 ## How it works
 
 Loading is two steps. First Keras reads `config.json` and builds each object from its `class_name` and `config`. A class that Keras does not know must be found in a registry or in the `custom_objects` that you pass. Then Keras builds the weights and assigns the arrays, in order, to the objects that it made.
@@ -108,6 +166,26 @@ weights equal after one more epoch: True
 ```
 
 The predictions are bit for bit equal. The loaded model is compiled, and its optimizer has the same step count. After one more epoch of the same batches, the weights are still equal. The file holds everything that training needs.
+
+#### `keras.saving.load_model`
+
+```text
+keras.saving.load_model(
+    filepath,
+    custom_objects=None,
+    compile=True,
+    safe_mode=True,
+)
+```
+
+The function rebuilds a model from a `.keras` file and assigns its weights.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | the path of the file | — |
+| `custom_objects` | `None` | a dict from the names in the file to your classes | without it, an unregistered layer gives a `TypeError` that names the model and not the layer (next section) |
+| `compile` | `True` | restore the loss, the metrics and the optimizer state | with `False`, the model has no optimizer, and `fit` raises `ValueError: You must call compile() before using the model` |
+| `safe_mode` | `True` | refuse to load Python code from the file | a model with a `Lambda` of a Python lambda raised `ValueError: Requested the deserialization of a Lambda layer whose function is a Python lambda`. `False` loads it. Use `False` only for a file that you trust |
 
 ## A custom layer must be findable
 
@@ -160,6 +238,22 @@ registered class, factor: 3.0
 ```
 
 Without registration the load fails with a `TypeError` that names the model class and not the missing layer. The message is not helpful, so know this cause. There are two fixes: pass the class in `custom_objects`, or decorate it with `register_keras_serializable`. The decorator is the better one, because the file then loads anywhere that the class is imported.
+
+#### `keras.saving.register_keras_serializable`
+
+```text
+keras.saving.register_keras_serializable(
+    package='Custom',
+    name=None,
+)
+```
+
+The function returns a decorator that puts a class in the registry under the name `package>name`.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `package` | `'Custom'` | the first part of the registered name | — (a class `Twice` became `Custom>Twice`) |
+| `name` | `None` | the second part. With `None`, the class name | with `name="double"` and `package="book"`, the name was `book>double`. The `.keras` file stores this name, and the load looks it up |
 
 ## A subclassed model needs `get_config` for its arguments
 
@@ -323,39 +417,38 @@ equal to model.predict: True
 
 The exported model has a `serving_default` endpoint, and it returns the same numbers as `predict`. The key of the input in the signature is the name of the input of the model, `pixels`. Name your inputs when you build the model. An unnamed input gets a name such as `keras_tensor_37`, and the number depends on how many tensors the process made before it. In the first version of this block, the call with `keras_tensor` worked when the block ran alone. It failed when it ran after the other blocks of the chapter.
 
-## Reference
-
-```python
-import keras
-from examples.signatures import show
-
-show(("Model.save", keras.Model.save), ("saving.load_model", keras.saving.load_model),
-     ("Model.save_weights", keras.Model.save_weights), ("Model.load_weights", keras.Model.load_weights),
-     ("Model.export", keras.Model.export),
-     ("saving.register_keras_serializable", keras.saving.register_keras_serializable))
-```
+#### `keras.Model.export`
 
 ```text
-Model.save(filepath, overwrite=True, zipped=None, **kwargs)
-saving.load_model(filepath, custom_objects=None, compile=True, safe_mode=True)
-Model.save_weights(filepath, overwrite=True, max_shard_size=None)
-Model.load_weights(filepath, skip_mismatch=False, **kwargs)
-Model.export(filepath, format='tf_saved_model', verbose=None,
-    input_signature=None, **kwargs)
-saving.register_keras_serializable(package='Custom', name=None)
+keras.Model.export(
+    filepath,
+    format='tf_saved_model',
+    verbose=None,
+    input_signature=None,
+    **kwargs,
+)
 ```
+
+The method writes an artifact for serving, with no Keras code in it.
 
 | parameter | default | what it does | what goes wrong |
 |---|---|---|---|
-| `save(filepath)` | required | path that ends in `.keras` | — |
-| `save(overwrite)` | `True` | replace an existing file | — |
-| `load_model(custom_objects)` | `None` | map from name to class | needed for an unregistered class |
-| `load_model(compile)` | `True` | rebuild the optimizer and the loss from the file | the loss class must be registered, or pass `custom_objects` |
-| `load_model(safe_mode)` | `True` | refuse to run unsafe code from a file | — |
-| `save_weights(filepath)` | required | write the arrays only; the name ends in `.weights.h5` | the architecture must be rebuilt by you |
-| `export(filepath)` | required | write a SavedModel for serving | an unnamed input became `keras_tensor_37` in one run, so a service cannot use it as a key |
-| `export(format)` | `'tf_saved_model'` | kind of artifact | — |
-| `register_keras_serializable(package)` | `'Custom'` | put the class in the registry under `package>Name` | an unregistered class failed to load (this chapter) |
+| `filepath` | required | a folder for the SavedModel | — |
+| `format` | `'tf_saved_model'` | `"tf_saved_model"`, `"onnx"`, `"openvino"`, `"litert"` or `"torch"` | `"onnx"` raised `ModuleNotFoundError: No module named 'onnx'` here, because the package is not installed. An unknown name lists the five formats |
+| `verbose` | `None` | print a summary of the endpoints | with `None`, the call printed 9 lines. The block uses `False` |
+| `input_signature` | `None` | the shapes and types of the inputs. With `None`, the inputs of the model | — (the key of the input is the name of the `keras.Input`) |
+| `**kwargs` | — | the options of each format | — |
+
+## Reference
+
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.Model.save` | What a `.keras` file holds | a zip of the config, the weights and the optimizer state |
+| `keras.Model.save_weights` | What a `.keras` file holds | the arrays only, in a `.weights.h5` file |
+| `keras.Model.load_weights` | What a `.keras` file holds | arrays into a model with the same architecture |
+| `keras.saving.load_model` | A round trip is exact | rebuild from the config, then assign the weights |
+| `keras.saving.register_keras_serializable` | A custom layer must be findable | a class in the registry as `package>name` |
+| `keras.Model.export` | Export for serving | a SavedModel with no Keras code |
 
 ## What you have now
 

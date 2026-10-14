@@ -18,7 +18,41 @@ def block_1():
     print("the number in each link matches its file name:", numbers_match)
 
 
+# ---- block 2 --------------------------------------------------
+def block_2():
+    import pathlib
+    import re
+
+    from examples.signatures import parameters, resolve
+
+    blocks = {}
+    for chapter in sorted(pathlib.Path("chapters").glob("*.md")):
+        names = re.findall(r"^#### `(keras\.[\w.]+)`", chapter.read_text(encoding="utf-8"), re.M)
+        for name in names:
+            blocks.setdefault(name, []).append(chapter.name[:2])
+
+    rows = sum(len(parameters(resolve(name))) for name in blocks)
+    print("callables with a block:", len(blocks))
+    print("callables with more than one block:", [n for n, where in blocks.items() if len(where) > 1])
+    print("parameters, so table rows:", rows)
+
+
+# ---- block 3 --------------------------------------------------
+def block_3():
+    import pathlib
+    import re
+
+    for chapter in sorted(pathlib.Path("chapters").glob("*.md")):
+        names = re.findall(r"^#### `keras\.([\w.]+)`", chapter.read_text(encoding="utf-8"), re.M)
+        if names:
+            print(f"{chapter.name[:2]}: {', '.join(names)}")
+
+
 
 if __name__ == "__main__":
     print('--- block 1')
     block_1()
+    print('--- block 2')
+    block_2()
+    print('--- block 3')
+    block_3()

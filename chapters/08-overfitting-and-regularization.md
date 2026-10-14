@@ -90,6 +90,60 @@ All four settings are within 3 images of the baseline. Input noise has the small
 
 A regularizer shrinks the gap. It does not always move the test score. Judge a regularizer by the test score, not by the gap.
 
+The block used three callables that have their blocks here. `BatchNormalization` has its block in [Chapter 3](03-layers-and-weights.md).
+
+#### `keras.layers.Dropout`
+
+```text
+keras.layers.Dropout(
+    rate,
+    noise_shape=None,
+    seed=None,
+    **kwargs,
+)
+```
+
+In training, the layer sets a random share `rate` of its inputs to zero and multiplies the others by `1 / (1 - rate)`. In inference, it returns its input.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `rate` | required | the share of inputs to set to zero, from 0 to 1 | — (with 0.5 on 10,000 ones, 0.4968 were kept, each with the value 2.0, and the mean stayed 0.9936). `rate=1.0` is accepted and gives only zeros. 1.5 raises `ValueError` |
+| `noise_shape` | `None` | the shape of the mask. A 1 shares one value along that axis | with `(4, 1)` on a batch of 4 rows of 6, each row was all zeros or all 2.0 |
+| `seed` | `None` | the seed of the generator of the layer | two layers with `seed=1` drew the same mask. The second call of one layer drew a new mask |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+
+#### `keras.regularizers.L2`
+
+```text
+keras.regularizers.L2(
+    l2=0.01,
+)
+```
+
+The regularizer adds `l2 * sum(w ** 2)` to the loss. It does not divide by 2.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `l2` | `0.01` | the factor | `L2()` on 10 weights of value 1 gave 0.1. A negative factor raises `ValueError: Invalid value for argument l2: expected a non-negative float` |
+
+#### `keras.layers.GaussianNoise`
+
+```text
+keras.layers.GaussianNoise(
+    stddev,
+    seed=None,
+    **kwargs,
+)
+```
+
+In training, the layer adds noise from a normal distribution with the mean 0. In inference, it returns its input.
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `stddev` | required | the standard deviation of the noise | the value must be from 0 to 1: 2.0 raises `ValueError`. On raw pixels from 0 to 16, scale the input first. 0.3 gave a measured standard deviation of 0.3001 in training and no noise in inference |
+| `seed` | `None` | the seed of the generator of the layer | — |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+
 ## More data beats every regularizer
 
 The lever that always works is more data. The next block trains one small model on growing subsets of the training images and prints both accuracies.
@@ -217,34 +271,13 @@ The invariant is: *the expected value of the output does not change with the rat
 
 ## Reference
 
-```python
-import keras
-from keras import layers
-from examples.signatures import show
+| Callable | Introduced in | Contract |
+|---|---|---|
+| `keras.layers.Dropout` | Four regularizers, one table | zero a share of the inputs in training, and scale the rest |
+| `keras.regularizers.L2` | Four regularizers, one table | `l2 * sum(w ** 2)`, added to the loss |
+| `keras.layers.GaussianNoise` | Four regularizers, one table | normal noise in training, with a standard deviation from 0 to 1 |
 
-show(layers.Dropout, ("regularizers.L2", keras.regularizers.L2), layers.GaussianNoise,
-     ("BatchNormalization", layers.BatchNormalization.__init__))
-```
-
-```text
-Dropout(rate, noise_shape=None, seed=None, **kwargs)
-regularizers.L2(l2=0.01)
-GaussianNoise(stddev, seed=None, **kwargs)
-BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True,
-    scale=True, beta_initializer='zeros', gamma_initializer='ones',
-    moving_mean_initializer='zeros', moving_variance_initializer='ones',
-    beta_regularizer=None, gamma_regularizer=None, beta_constraint=None,
-    gamma_constraint=None, renorm=False, renorm_clipping=None,
-    renorm_momentum=0.99, synchronized=False, **kwargs)
-```
-
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `Dropout(rate)` | required | probability that a unit is set to zero | 0.5 lowered the gap from 0.067 to 0.040 and did not raise the test score |
-| `Dropout(seed)` | `None` | seed of the layer's generator | — |
-| `L2(l2)` | `0.01` | factor of the squared-weight penalty | the penalty is part of `val_loss` (Chapter 8) |
-| `GaussianNoise(stddev)` | required | standard deviation of the noise, in training only | 0.3 lowered the gap to 0.002 and the training accuracy to 0.935 |
-| `BatchNormalization(momentum)` | `0.99` | speed of the moving statistics | the moving values are used at inference |
+`keras.layers.BatchNormalization` is in [Chapter 3](03-layers-and-weights.md).
 
 ## What you have now
 

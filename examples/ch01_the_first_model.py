@@ -138,17 +138,6 @@ def block_7():
     print("steps in one epoch with the default batch_size:", int(default.optimizer.iterations.numpy()))
 
 
-# ---- block 8 --------------------------------------------------
-def block_8():
-    import keras
-    from keras import layers
-    from examples.signatures import show
-
-    show(("Sequential", keras.Sequential.__init__), ("Input", keras.Input), layers.Dense,
-         ("Model.compile", keras.Model.compile), ("Model.fit", keras.Model.fit),
-         ("Model.predict", keras.Model.predict), ("Model.evaluate", keras.Model.evaluate))
-
-
 
 if __name__ == "__main__":
     print('--- block 1')
@@ -165,5 +154,3 @@ if __name__ == "__main__":
     block_6()
     print('--- block 7')
     block_7()
-    print('--- block 8')
-    block_8()
