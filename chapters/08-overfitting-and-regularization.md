@@ -105,12 +105,7 @@ keras.layers.Dropout(
 
 In training, the layer sets a random share `rate` of its inputs to zero and multiplies the others by `1 / (1 - rate)`. In inference, it returns its input.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `rate` | required | the share of inputs to set to zero, from 0 to 1 | — (with 0.5 on 10,000 ones, 0.4968 were kept, each with the value 2.0, and the mean stayed 0.9936). `rate=1.0` is accepted and gives only zeros. 1.5 raises `ValueError` |
-| `noise_shape` | `None` | the shape of the mask. A 1 shares one value along that axis | with `(4, 1)` on a batch of 4 rows of 6, each row was all zeros or all 2.0 |
-| `seed` | `None` | the seed of the generator of the layer | two layers with `seed=1` drew the same mask. The second call of one layer drew a new mask |
-| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+The table under `keras.layers.Dropout` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.regularizers.L2`
 
@@ -122,9 +117,7 @@ keras.regularizers.L2(
 
 The regularizer adds `l2 * sum(w ** 2)` to the loss. It does not divide by 2.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `l2` | `0.01` | the factor | `L2()` on 10 weights of value 1 gave 0.1. A negative factor raises `ValueError: Invalid value for argument l2: expected a non-negative float` |
+The table under `keras.regularizers.L2` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.layers.GaussianNoise`
 
@@ -138,11 +131,7 @@ keras.layers.GaussianNoise(
 
 In training, the layer adds noise from a normal distribution with the mean 0. In inference, it returns its input.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `stddev` | required | the standard deviation of the noise | the value must be from 0 to 1: 2.0 raises `ValueError`. On raw pixels from 0 to 16, scale the input first. 0.3 gave a measured standard deviation of 0.3001 in training and no noise in inference |
-| `seed` | `None` | the seed of the generator of the layer | — |
-| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+The table under `keras.layers.GaussianNoise` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## More data beats every regularizer
 
@@ -278,6 +267,32 @@ The invariant is: *the expected value of the output does not change with the rat
 | `keras.layers.GaussianNoise` | Four regularizers, one table | normal noise in training, with a standard deviation from 0 to 1 |
 
 `keras.layers.BatchNormalization` is in [Chapter 3](03-layers-and-weights.md).
+
+### Parameters
+
+##### `keras.layers.Dropout`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `rate` | required | the share of inputs to set to zero, from 0 to 1 | — (with 0.5 on 10,000 ones, 0.4968 were kept, each with the value 2.0, and the mean stayed 0.9936). `rate=1.0` is accepted and gives only zeros. 1.5 raises `ValueError` |
+| `noise_shape` | `None` | the shape of the mask. A 1 shares one value along that axis | with `(4, 1)` on a batch of 4 rows of 6, each row was all zeros or all 2.0 |
+| `seed` | `None` | the seed of the generator of the layer | two layers with `seed=1` drew the same mask. The second call of one layer drew a new mask |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+
+##### `keras.regularizers.L2`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `l2` | `0.01` | the factor | `L2()` on 10 weights of value 1 gave 0.1. A negative factor raises `ValueError: Invalid value for argument l2: expected a non-negative float` |
+
+##### `keras.layers.GaussianNoise`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `stddev` | required | the standard deviation of the noise | the value must be from 0 to 1: 2.0 raises `ValueError`. On raw pixels from 0 to 16, scale the input first. 0.3 gave a measured standard deviation of 0.3001 in training and no noise in inference |
+| `seed` | `None` | the seed of the generator of the layer | — |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+
 
 ## What you have now
 

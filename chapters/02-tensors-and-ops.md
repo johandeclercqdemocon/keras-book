@@ -53,12 +53,7 @@ keras.ops.convert_to_tensor(
 
 The function returns a tensor of the active back end.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `x` | required | a NumPy array, a list or a number | the type comes from `x`, not from `keras.config.floatx()`: a list of integers gives `int32`, a list of floats gives `float32`, and a NumPy `float64` array stays `float64` |
-| `dtype` | `None` | the type of the tensor | the value is converted with no error: `[1.7]` as `int32` is `[1]`, and `[300]` as `uint8` is `[44]` |
-| `sparse` | `None` | keep a sparse input sparse | — |
-| `ragged` | `None` | keep a ragged input ragged. TensorFlow back end only | — |
+The table under `keras.ops.convert_to_tensor` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.ops.convert_to_numpy`
 
@@ -70,9 +65,7 @@ keras.ops.convert_to_numpy(
 
 The function returns a NumPy array with the values of the tensor.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `x` | required | a tensor | — (the result owns its memory and is writable. A write to the NumPy array that made a tensor did not change the tensor) |
+The table under `keras.ops.convert_to_numpy` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## Write once with `keras.ops`
 
@@ -146,10 +139,7 @@ keras.ops.cast(
 
 The function returns the values of `x` in the type `dtype`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `x` | required | a tensor, an array or a number | — |
-| `dtype` | required | the new type, as a string such as `"float16"` | the conversion never raises: `uint8` 200 + 100 gives 44, `float16` 70000 gives `inf`, and `[1.7, -1.7]` as `int32` gives `[1, -1]`. A name that is not a type raises `ValueError: Invalid dtype` |
+The table under `keras.ops.cast` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 These three results are the reasons for care when you train with 16-bit numbers or quantize a model to 8 bits. [Chapter 15](15-performance-and-reproducibility.md) measures what mixed precision costs and what it saves.
 
@@ -214,9 +204,7 @@ keras.utils.set_random_seed(
 
 The function sets the seed of Python, NumPy and the back end with one call.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `seed` | required | an integer from 0 to 2**32 - 1 | `1.5`, `None` and `"7"` raise `ValueError: Expected seed argument to be an integer`. `-1` raises `ValueError: Seed must be between 0 and 2**32 - 1` |
+The table under `keras.utils.set_random_seed` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.random.normal`
 
@@ -232,13 +220,7 @@ keras.random.normal(
 
 The function returns a tensor of numbers from a normal distribution.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `shape` | required | the shape of the result, as a tuple | the integer `3` in place of `(3,)` raises `InvalidArgumentError` from TensorFlow, with no Keras message |
-| `mean` | `0.0` | the mean | — (100,000 draws with mean 5 and standard deviation 2 gave 5.002 and 1.999) |
-| `stddev` | `1.0` | the standard deviation | — |
-| `dtype` | `None` | the type. With `None`, `float32` | — |
-| `seed` | `None` | `None` uses the global generator that `set_random_seed` sets. An integer is stateless. A `SeedGenerator` is stateful | an integer seed gives equal draws on every call (this chapter) |
+The table under `keras.random.normal` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.random.SeedGenerator`
 
@@ -252,11 +234,7 @@ keras.random.SeedGenerator(
 
 The class holds a seed and a counter. Each draw that uses it moves the counter.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `seed` | `None` | the start seed. With `None`, a seed from the global generator | with `None`, two generators made one after the other give different draws. After the same `set_random_seed(3)`, they repeat |
-| `name` | `None` | the name of the generator, such as `seed_generator_6` | — |
-| `**kwargs` | — | no other keyword is accepted | `foo=2` raises `ValueError: Unrecognized keyword arguments: {'foo': 2}` |
+The table under `keras.random.SeedGenerator` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## Four rules
 
@@ -317,6 +295,55 @@ The invariant is: *the numbers are a function of the seed and the counter.* A ge
 | `keras.utils.set_random_seed` | Random numbers need a seed policy | one seed for Python, NumPy and the back end |
 | `keras.random.normal` | Random numbers need a seed policy | normal numbers from the global, an integer or a stateful seed |
 | `keras.random.SeedGenerator` | Random numbers need a seed policy | a seed and a counter that moves on each draw |
+
+### Parameters
+
+##### `keras.ops.convert_to_tensor`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | a NumPy array, a list or a number | the type comes from `x`, not from `keras.config.floatx()`: a list of integers gives `int32`, a list of floats gives `float32`, and a NumPy `float64` array stays `float64` |
+| `dtype` | `None` | the type of the tensor | the value is converted with no error: `[1.7]` as `int32` is `[1]`, and `[300]` as `uint8` is `[44]` |
+| `sparse` | `None` | keep a sparse input sparse | — |
+| `ragged` | `None` | keep a ragged input ragged. TensorFlow back end only | — |
+
+##### `keras.ops.convert_to_numpy`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | a tensor | — (the result owns its memory and is writable. A write to the NumPy array that made a tensor did not change the tensor) |
+
+##### `keras.ops.cast`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | a tensor, an array or a number | — |
+| `dtype` | required | the new type, as a string such as `"float16"` | the conversion never raises: `uint8` 200 + 100 gives 44, `float16` 70000 gives `inf`, and `[1.7, -1.7]` as `int32` gives `[1, -1]`. A name that is not a type raises `ValueError: Invalid dtype` |
+
+##### `keras.utils.set_random_seed`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `seed` | required | an integer from 0 to 2**32 - 1 | `1.5`, `None` and `"7"` raise `ValueError: Expected seed argument to be an integer`. `-1` raises `ValueError: Seed must be between 0 and 2**32 - 1` |
+
+##### `keras.random.normal`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `shape` | required | the shape of the result, as a tuple | the integer `3` in place of `(3,)` raises `InvalidArgumentError` from TensorFlow, with no Keras message |
+| `mean` | `0.0` | the mean | — (100,000 draws with mean 5 and standard deviation 2 gave 5.002 and 1.999) |
+| `stddev` | `1.0` | the standard deviation | — |
+| `dtype` | `None` | the type. With `None`, `float32` | — |
+| `seed` | `None` | `None` uses the global generator that `set_random_seed` sets. An integer is stateless. A `SeedGenerator` is stateful | an integer seed gives equal draws on every call (this chapter) |
+
+##### `keras.random.SeedGenerator`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `seed` | `None` | the start seed. With `None`, a seed from the global generator | with `None`, two generators made one after the other give different draws. After the same `set_random_seed(3)`, they repeat |
+| `name` | `None` | the name of the generator, such as `seed_generator_6` | — |
+| `**kwargs` | — | no other keyword is accepted | `foo=2` raises `ValueError: Unrecognized keyword arguments: {'foo': 2}` |
+
 
 ## What you have now
 

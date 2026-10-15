@@ -77,10 +77,7 @@ keras.Model(
 
 The class makes a functional model from inputs and outputs, or it is the base class of a subclassed model. Its constructor takes `*args` and `**kwargs` and gives them to the right form.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `*args` | — | `inputs` and `outputs`, by position | a third positional argument, such as a name, raises `TypeError: Layer.__init__() takes 1 positional argument but 4 were given` |
-| `**kwargs` | — | `inputs`, `outputs`, `name` and `trainable` by keyword. A subclass passes its `**kwargs` here | an unknown keyword is accepted with no error: `foo=1` was ignored. `inputs=` with no `outputs=` raises `ValueError: Unrecognized keyword arguments passed to Model: {'inputs': ...}`, which does not name the missing `outputs` |
+The table under `keras.Model` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## What Keras knows before data arrives
 
@@ -181,10 +178,7 @@ keras.layers.Concatenate(
 
 The layer joins a list of tensors along one axis.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `axis` | `-1` | the axis to join along | all the other axes must be equal. `(None, 8)` and `(None, 3)` gave `(None, 11)`, and with `axis=0` they raised `ValueError: A Concatenate layer requires inputs with matching shapes except for the concatenation axis` |
-| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+The table under `keras.layers.Concatenate` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 The model has two outputs. Keras needs a loss for each one. The `compile` call takes a dictionary keyed by the output names.
 
@@ -282,6 +276,23 @@ The configuration lists the three layers in order, and a model built from it is 
 | `keras.layers.Concatenate` | Branches, shared layers and two outputs | one tensor from several, joined along one axis |
 
 `keras.Sequential`, `keras.Input` and `keras.Model.summary` are in [Chapter 1](01-the-first-model.md).
+
+### Parameters
+
+##### `keras.Model`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `*args` | — | `inputs` and `outputs`, by position | a third positional argument, such as a name, raises `TypeError: Layer.__init__() takes 1 positional argument but 4 were given` |
+| `**kwargs` | — | `inputs`, `outputs`, `name` and `trainable` by keyword. A subclass passes its `**kwargs` here | an unknown keyword is accepted with no error: `foo=1` was ignored. `inputs=` with no `outputs=` raises `ValueError: Unrecognized keyword arguments passed to Model: {'inputs': ...}`, which does not name the missing `outputs` |
+
+##### `keras.layers.Concatenate`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `axis` | `-1` | the axis to join along | all the other axes must be equal. `(None, 8)` and `(None, 3)` gave `(None, 11)`, and with `axis=0` they raised `ValueError: A Concatenate layer requires inputs with matching shapes except for the concatenation axis` |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+
 
 ## What you have now
 

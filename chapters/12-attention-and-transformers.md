@@ -63,17 +63,7 @@ keras.ops.dot_product_attention(
 
 The function computes `softmax(Q Kᵀ × scale + bias) V` for each head. The inputs have the layout `(batch, time, heads, width)`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `query` | required | the queries | a 3-D input raises `ValueError: dot_product_attention only supports 4D inputs` |
-| `key` | required | the keys | — |
-| `value` | required | the values | — |
-| `bias` | `None` | a number added to each score | — (a bias of -1e9 on key 0 gave the same output as a mask on key 0) |
-| `mask` | `None` | a boolean array. `False` removes a key | — |
-| `scale` | `None` | the factor of the scores. With `None`, `1 / sqrt(width)` | with 1.0 in place of 1/√8, the mean largest weight of a row rose from 0.659 to 0.896: the weights are sharper |
-| `is_causal` | `False` | remove the keys after each query | — (a change at position 4 did not move the outputs at 0 to 3) |
-| `flash_attention` | `None` | use a fused kernel when it can | `True` raises `ValueError: Flash attention is not supported in tensorflow backend` |
-| `attn_logits_soft_cap` | `None` | limit the scores with `tanh` | any value raises `ValueError: attn_logits_soft_cap is only supported for JAX on TPU` |
+The table under `keras.ops.dot_product_attention` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## The Keras layer
 
@@ -152,27 +142,7 @@ keras.layers.MultiHeadAttention(
 
 The layer projects the query, the key and the value for each of `num_heads` heads, runs attention, and projects the result back.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `num_heads` | required | the number of heads | — |
-| `key_dim` | required | the width of the query and the key in one head | it does not need to be the width of the input divided by the heads: `key_dim=3` on 16 features gave an output of 16 and 418 weights, against 1,088 for 8 |
-| `value_dim` | `None` | the width of the value in one head. With `None`, `key_dim` | — (4 gave 824 weights) |
-| `dropout` | `0.0` | dropout on the attention weights, in training only | — |
-| `use_bias` | `True` | add biases to the projections | — (with `False`, 1,024 weights) |
-| `output_shape` | `None` | the width of the output. With `None`, the width of the query | — (4 gave `(1, 6, 4)` on an input of width 16) |
-| `attention_axes` | `None` | the axes to attend over. With `None`, all axes between the batch and the features | — |
-| `sliding_window` | `None` | limit each query to near keys | with 2, a change at token 4 moved the outputs at 3, 4 and 5 only. With 1, only at 4 |
-| `flash_attention` | `None` | use a fused kernel | `True` raised `ValueError` on this back end, at the call |
-| `kernel_initializer` | `'glorot_uniform'` | the start values of the projections | — |
-| `bias_initializer` | `'zeros'` | the start values of the biases | — |
-| `kernel_regularizer` | `None` | a penalty on the projections | — |
-| `bias_regularizer` | `None` | a penalty on the biases | — |
-| `activity_regularizer` | `None` | a penalty on the output | — |
-| `kernel_constraint` | `None` | a rule for the projections | — |
-| `bias_constraint` | `None` | a rule for the biases | — |
-| `use_gate` | `False` | add a learned gate to the output of each head | — (1,360 weights against 1,088) |
-| `seed` | `None` | the seed of the dropout | — |
-| `**kwargs` | — | the arguments of `Layer` | — |
+The table under `keras.layers.MultiHeadAttention` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.layers.MultiHeadAttention.call`
 
@@ -193,18 +163,7 @@ keras.layers.MultiHeadAttention.call(
 
 The method is what `attention(query, value)` runs. The key is optional.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `query` | required | the sequence that asks | — |
-| `value` | required | the sequence that answers | the two can have different lengths: a query of 6 and a value of 9 gave scores of shape `(1, 2, 6, 9)` |
-| `key` | `None` | the keys. With `None`, `value` | — (the output was equal to `key=value`) |
-| `query_mask` | `None` | a boolean mask on the queries | — |
-| `value_mask` | `None` | a boolean mask on the values | with `False` on the last 2 values, their weights were 0.0 |
-| `key_mask` | `None` | a boolean mask on the keys | — |
-| `attention_mask` | `None` | a boolean array `(batch, query, key)`. `False` removes a pair | with `False` for key 0, its weight was 0.0 in every row |
-| `return_attention_scores` | `False` | also return the weights | — (the result is then a pair `(output, weights)`) |
-| `training` | `None` | the mode for the dropout | — |
-| `use_causal_mask` | `False` | remove the keys after each query | — (this section) |
+The table under `keras.layers.MultiHeadAttention.call` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## A transformer block
 
@@ -251,19 +210,7 @@ keras.layers.LayerNormalization(
 
 The layer subtracts the mean of each sample and divides by its standard deviation over the feature axis. It has no moving statistics, so training and inference compute the same thing.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `axis` | `-1` | the axis or axes of the statistics | with `[1, 2]` on `(6, 16)`, `gamma` had the shape `(6, 16)` and the layer had 192 weights, not 32 |
-| `epsilon` | `0.001` | a small number added to the variance | it is large for rows with a small variance: a row with the variance 0.002 came out with the standard deviation 0.816, not 1. With 1e-6 it was 1.0 |
-| `center` | `True` | add the shift `beta` | — (16 weights fewer) |
-| `scale` | `True` | add the scale `gamma` | — |
-| `beta_initializer` | `'zeros'` | the start value of `beta` | — |
-| `gamma_initializer` | `'ones'` | the start value of `gamma` | — |
-| `beta_regularizer` | `None` | a penalty on `beta` | — |
-| `gamma_regularizer` | `None` | a penalty on `gamma` | — |
-| `beta_constraint` | `None` | a rule for `beta` | — |
-| `gamma_constraint` | `None` | a rule for `gamma` | — |
-| `**kwargs` | — | the arguments of `Layer` | — |
+The table under `keras.layers.LayerNormalization` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## The test: order
 
@@ -399,6 +346,78 @@ The count matches. The number of weights does not change when the length of the 
 | `keras.layers.MultiHeadAttention` | The Keras layer | projections, several heads, and a projection back |
 | `keras.layers.MultiHeadAttention.call` | The Keras layer | `attention(query, value)`, with optional masks and weights |
 | `keras.layers.LayerNormalization` | A transformer block | normalize each sample over its features |
+
+### Parameters
+
+##### `keras.ops.dot_product_attention`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `query` | required | the queries | a 3-D input raises `ValueError: dot_product_attention only supports 4D inputs` |
+| `key` | required | the keys | — |
+| `value` | required | the values | — |
+| `bias` | `None` | a number added to each score | — (a bias of -1e9 on key 0 gave the same output as a mask on key 0) |
+| `mask` | `None` | a boolean array. `False` removes a key | — |
+| `scale` | `None` | the factor of the scores. With `None`, `1 / sqrt(width)` | with 1.0 in place of 1/√8, the mean largest weight of a row rose from 0.659 to 0.896: the weights are sharper |
+| `is_causal` | `False` | remove the keys after each query | — (a change at position 4 did not move the outputs at 0 to 3) |
+| `flash_attention` | `None` | use a fused kernel when it can | `True` raises `ValueError: Flash attention is not supported in tensorflow backend` |
+| `attn_logits_soft_cap` | `None` | limit the scores with `tanh` | any value raises `ValueError: attn_logits_soft_cap is only supported for JAX on TPU` |
+
+##### `keras.layers.MultiHeadAttention`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `num_heads` | required | the number of heads | — |
+| `key_dim` | required | the width of the query and the key in one head | it does not need to be the width of the input divided by the heads: `key_dim=3` on 16 features gave an output of 16 and 418 weights, against 1,088 for 8 |
+| `value_dim` | `None` | the width of the value in one head. With `None`, `key_dim` | — (4 gave 824 weights) |
+| `dropout` | `0.0` | dropout on the attention weights, in training only | — |
+| `use_bias` | `True` | add biases to the projections | — (with `False`, 1,024 weights) |
+| `output_shape` | `None` | the width of the output. With `None`, the width of the query | — (4 gave `(1, 6, 4)` on an input of width 16) |
+| `attention_axes` | `None` | the axes to attend over. With `None`, all axes between the batch and the features | — |
+| `sliding_window` | `None` | limit each query to near keys | with 2, a change at token 4 moved the outputs at 3, 4 and 5 only. With 1, only at 4 |
+| `flash_attention` | `None` | use a fused kernel | `True` raised `ValueError` on this back end, at the call |
+| `kernel_initializer` | `'glorot_uniform'` | the start values of the projections | — |
+| `bias_initializer` | `'zeros'` | the start values of the biases | — |
+| `kernel_regularizer` | `None` | a penalty on the projections | — |
+| `bias_regularizer` | `None` | a penalty on the biases | — |
+| `activity_regularizer` | `None` | a penalty on the output | — |
+| `kernel_constraint` | `None` | a rule for the projections | — |
+| `bias_constraint` | `None` | a rule for the biases | — |
+| `use_gate` | `False` | add a learned gate to the output of each head | — (1,360 weights against 1,088) |
+| `seed` | `None` | the seed of the dropout | — |
+| `**kwargs` | — | the arguments of `Layer` | — |
+
+##### `keras.layers.MultiHeadAttention.call`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `query` | required | the sequence that asks | — |
+| `value` | required | the sequence that answers | the two can have different lengths: a query of 6 and a value of 9 gave scores of shape `(1, 2, 6, 9)` |
+| `key` | `None` | the keys. With `None`, `value` | — (the output was equal to `key=value`) |
+| `query_mask` | `None` | a boolean mask on the queries | — |
+| `value_mask` | `None` | a boolean mask on the values | with `False` on the last 2 values, their weights were 0.0 |
+| `key_mask` | `None` | a boolean mask on the keys | — |
+| `attention_mask` | `None` | a boolean array `(batch, query, key)`. `False` removes a pair | with `False` for key 0, its weight was 0.0 in every row |
+| `return_attention_scores` | `False` | also return the weights | — (the result is then a pair `(output, weights)`) |
+| `training` | `None` | the mode for the dropout | — |
+| `use_causal_mask` | `False` | remove the keys after each query | — (this section) |
+
+##### `keras.layers.LayerNormalization`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `axis` | `-1` | the axis or axes of the statistics | with `[1, 2]` on `(6, 16)`, `gamma` had the shape `(6, 16)` and the layer had 192 weights, not 32 |
+| `epsilon` | `0.001` | a small number added to the variance | it is large for rows with a small variance: a row with the variance 0.002 came out with the standard deviation 0.816, not 1. With 1e-6 it was 1.0 |
+| `center` | `True` | add the shift `beta` | — (16 weights fewer) |
+| `scale` | `True` | add the scale `gamma` | — |
+| `beta_initializer` | `'zeros'` | the start value of `beta` | — |
+| `gamma_initializer` | `'ones'` | the start value of `gamma` | — |
+| `beta_regularizer` | `None` | a penalty on `beta` | — |
+| `gamma_regularizer` | `None` | a penalty on `gamma` | — |
+| `beta_constraint` | `None` | a rule for `beta` | — |
+| `gamma_constraint` | `None` | a rule for `gamma` | — |
+| `**kwargs` | — | the arguments of `Layer` | — |
+
 
 ## What you have now
 

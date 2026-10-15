@@ -55,14 +55,7 @@ keras.layers.Layer(
 
 The class is the base of every layer. A subclass passes the arguments in `**kwargs` to it.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `activity_regularizer` | `None` | a penalty on the output of the layer | `L2(0.01)` on an output of four ones put 0.04 in `layer.losses` |
-| `trainable` | `True` | the optimizer updates the weights | a change after the first `fit` has no effect until the next `compile` (this chapter) |
-| `dtype` | `None` | the type of the weights and of the computation. With `None`, `float32` | with `"float64"`, the kernel and the output are `float64` |
-| `autocast` | `True` | convert float inputs to the type of the computation | a `float64` input gave a `float32` output. With `autocast=False`, `ops.matmul` of the `float64` input and the `float32` kernel raised `InvalidArgumentError` |
-| `name` | `None` | the name. With `None`, the class name in snake case | `MyDense` became `my_dense` |
-| `**kwargs` | — | no other keyword is accepted | `foo=1` raises `ValueError: Unrecognized keyword arguments passed to Layer: {'foo': 1}` |
+The table under `keras.layers.Layer` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.layers.Layer.build`
 
@@ -74,9 +67,7 @@ keras.layers.Layer.build(
 
 Keras calls the method one time, before the first `call`. It creates the weights.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `input_shape` | required | the shape of the first input, with the batch axis | the batch axis is a number for a direct call, `(2, 4)`, and `None` inside a model, `(None, 4)`. Use only `input_shape[-1]` and the other axes that do not change |
+The table under `keras.layers.Layer.build` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.layers.Layer.add_weight`
 
@@ -98,19 +89,7 @@ keras.layers.Layer.add_weight(
 
 The method creates a variable, tracks it and returns it. Call it in `build`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `*args` | — | the shape and the initializer by position | `add_weight((2,), "ones")` is accepted. Use the names: the order is not obvious |
-| `shape` | `None` | the shape of the weight. With `None`, a scalar | — |
-| `initializer` | `None` | the start values. With `None`, `glorot_uniform` for a float weight and zeros for an integer weight | a float weight of shape `(200, 300)` got values from -0.1095 to 0.1095, the Glorot limit. Name the initializer, so that the reader sees the choice |
-| `dtype` | `None` | the type. With `None`, the type of the variables of the layer | — |
-| `trainable` | `True` | `False` puts the weight in `non_trainable_weights` | the counter layer in this chapter uses it, and the optimizer does not change it |
-| `autocast` | `True` | read the variable in the type of the computation | — |
-| `regularizer` | `None` | a penalty on the weight, added to `layer.losses` | the term appears only after the layer is built (this chapter) |
-| `constraint` | `None` | a rule that Keras applies after each update | `NonNeg()` kept three weights at 0.0 when the gradient pushed them below zero |
-| `aggregation` | `'none'` | how to combine copies of the variable on several devices | — |
-| `overwrite_with_gradient` | `False` | replace the value with the gradient. For special training loops | — |
-| `name` | `None` | the name in the path of the weight | with `None`, the path is `layer/variable`, then `variable_1` and so on. A file of weights is then hard to read |
+The table under `keras.layers.Layer.add_weight` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.layers.Layer.get_config`
 
@@ -220,9 +199,7 @@ keras.layers.Layer.set_weights(
 
 The method assigns a list of arrays to the weights, in the order of `get_weights`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `weights` | required | a list of arrays, one for each weight | for a model of 2 weights, a list of 1 raised `ValueError: ... with a weight list of length 1, but the layer was expecting 2 weights`, and a list of 3 raised the same error. A wrong shape raises `ValueError: ... weight shape (3, 3, 1, 4) is not compatible with provided weight shape (3, 3, 1, 5)` |
+The table under `keras.layers.Layer.set_weights` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## Trainable and non-trainable weights
 
@@ -286,26 +263,7 @@ keras.layers.BatchNormalization(
 
 The layer subtracts a mean and divides by a standard deviation for each feature, then scales with `gamma` and shifts with `beta`. In training it uses the statistics of the batch. In inference it uses the moving mean and variance.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `axis` | `-1` | the axis of the features | with `axis=0` on a batch of 64, the weights got the shape `(64,)`, and a batch of 32 raised `ValueError` |
-| `momentum` | `0.99` | the weight of the old value in the moving mean and variance | on data with the mean 5.018, the moving mean was 0.050 after 1 step, 3.181 after 100 and 4.968 after 460. After 10 steps, the inference output had the mean 4.52, and the training output had the mean 0. With `momentum=0.9`, the moving mean was 3.268 after 10 steps |
-| `epsilon` | `0.001` | a small number added to the variance before the root | — (a constant feature gave the output 0.0, with no division by zero) |
-| `center` | `True` | add the trainable shift `beta` | with `False`, the only trainable weight is `gamma` |
-| `scale` | `True` | add the trainable scale `gamma` | with `False`, the only trainable weight is `beta` |
-| `beta_initializer` | `'zeros'` | the start value of `beta` | — |
-| `gamma_initializer` | `'ones'` | the start value of `gamma` | — |
-| `moving_mean_initializer` | `'zeros'` | the start value of the moving mean | the start value 0 is the cause of the slow start in the `momentum` row |
-| `moving_variance_initializer` | `'ones'` | the start value of the moving variance | — |
-| `beta_regularizer` | `None` | a penalty on `beta` | — |
-| `gamma_regularizer` | `None` | a penalty on `gamma` | — |
-| `beta_constraint` | `None` | a rule for `beta` | — |
-| `gamma_constraint` | `None` | a rule for `gamma` | — |
-| `renorm` | `False` | batch renormalization | with `True`, the layer has 5 non-trainable weights and not 2: `moving_stddev`, `renorm_mean` and `renorm_stddev` are added |
-| `renorm_clipping` | `None` | the limits of the renormalization corrections | — |
-| `renorm_momentum` | `0.99` | the momentum of the renormalization statistics | — |
-| `synchronized` | `False` | compute the statistics over all devices | — |
-| `**kwargs` | — | the arguments of `Layer`, such as `name` | `foo=1` raises `ValueError: Unrecognized keyword arguments` |
+The table under `keras.layers.BatchNormalization` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 The list changes at once. The training loop does not change at once. Keras builds the training function at the first `fit` and keeps it. A change of `trainable` after that point has no effect until you call `compile` again. The next block measures four cases. It reports whether the weights of layer `a` changed during one more epoch.
 
@@ -517,6 +475,71 @@ The mechanism also explains the counter of this chapter. Keras calls `call` once
 | `keras.layers.Layer.get_weights` | The same numbers as `Dense` | copies of the weights, in creation order |
 | `keras.layers.Layer.set_weights` | The same numbers as `Dense` | assign a list of arrays. Length and shapes must match |
 | `keras.layers.BatchNormalization` | Trainable and non-trainable weights | batch statistics in training, moving statistics in inference |
+
+### Parameters
+
+##### `keras.layers.Layer`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `activity_regularizer` | `None` | a penalty on the output of the layer | `L2(0.01)` on an output of four ones put 0.04 in `layer.losses` |
+| `trainable` | `True` | the optimizer updates the weights | a change after the first `fit` has no effect until the next `compile` (this chapter) |
+| `dtype` | `None` | the type of the weights and of the computation. With `None`, `float32` | with `"float64"`, the kernel and the output are `float64` |
+| `autocast` | `True` | convert float inputs to the type of the computation | a `float64` input gave a `float32` output. With `autocast=False`, `ops.matmul` of the `float64` input and the `float32` kernel raised `InvalidArgumentError` |
+| `name` | `None` | the name. With `None`, the class name in snake case | `MyDense` became `my_dense` |
+| `**kwargs` | — | no other keyword is accepted | `foo=1` raises `ValueError: Unrecognized keyword arguments passed to Layer: {'foo': 1}` |
+
+##### `keras.layers.Layer.build`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `input_shape` | required | the shape of the first input, with the batch axis | the batch axis is a number for a direct call, `(2, 4)`, and `None` inside a model, `(None, 4)`. Use only `input_shape[-1]` and the other axes that do not change |
+
+##### `keras.layers.Layer.add_weight`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `*args` | — | the shape and the initializer by position | `add_weight((2,), "ones")` is accepted. Use the names: the order is not obvious |
+| `shape` | `None` | the shape of the weight. With `None`, a scalar | — |
+| `initializer` | `None` | the start values. With `None`, `glorot_uniform` for a float weight and zeros for an integer weight | a float weight of shape `(200, 300)` got values from -0.1095 to 0.1095, the Glorot limit. Name the initializer, so that the reader sees the choice |
+| `dtype` | `None` | the type. With `None`, the type of the variables of the layer | — |
+| `trainable` | `True` | `False` puts the weight in `non_trainable_weights` | the counter layer in this chapter uses it, and the optimizer does not change it |
+| `autocast` | `True` | read the variable in the type of the computation | — |
+| `regularizer` | `None` | a penalty on the weight, added to `layer.losses` | the term appears only after the layer is built (this chapter) |
+| `constraint` | `None` | a rule that Keras applies after each update | `NonNeg()` kept three weights at 0.0 when the gradient pushed them below zero |
+| `aggregation` | `'none'` | how to combine copies of the variable on several devices | — |
+| `overwrite_with_gradient` | `False` | replace the value with the gradient. For special training loops | — |
+| `name` | `None` | the name in the path of the weight | with `None`, the path is `layer/variable`, then `variable_1` and so on. A file of weights is then hard to read |
+
+##### `keras.layers.Layer.set_weights`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `weights` | required | a list of arrays, one for each weight | for a model of 2 weights, a list of 1 raised `ValueError: ... with a weight list of length 1, but the layer was expecting 2 weights`, and a list of 3 raised the same error. A wrong shape raises `ValueError: ... weight shape (3, 3, 1, 4) is not compatible with provided weight shape (3, 3, 1, 5)` |
+
+##### `keras.layers.BatchNormalization`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `axis` | `-1` | the axis of the features | with `axis=0` on a batch of 64, the weights got the shape `(64,)`, and a batch of 32 raised `ValueError` |
+| `momentum` | `0.99` | the weight of the old value in the moving mean and variance | on data with the mean 5.018, the moving mean was 0.050 after 1 step, 3.181 after 100 and 4.968 after 460. After 10 steps, the inference output had the mean 4.52, and the training output had the mean 0. With `momentum=0.9`, the moving mean was 3.268 after 10 steps |
+| `epsilon` | `0.001` | a small number added to the variance before the root | — (a constant feature gave the output 0.0, with no division by zero) |
+| `center` | `True` | add the trainable shift `beta` | with `False`, the only trainable weight is `gamma` |
+| `scale` | `True` | add the trainable scale `gamma` | with `False`, the only trainable weight is `beta` |
+| `beta_initializer` | `'zeros'` | the start value of `beta` | — |
+| `gamma_initializer` | `'ones'` | the start value of `gamma` | — |
+| `moving_mean_initializer` | `'zeros'` | the start value of the moving mean | the start value 0 is the cause of the slow start in the `momentum` row |
+| `moving_variance_initializer` | `'ones'` | the start value of the moving variance | — |
+| `beta_regularizer` | `None` | a penalty on `beta` | — |
+| `gamma_regularizer` | `None` | a penalty on `gamma` | — |
+| `beta_constraint` | `None` | a rule for `beta` | — |
+| `gamma_constraint` | `None` | a rule for `gamma` | — |
+| `renorm` | `False` | batch renormalization | with `True`, the layer has 5 non-trainable weights and not 2: `moving_stddev`, `renorm_mean` and `renorm_stddev` are added |
+| `renorm_clipping` | `None` | the limits of the renormalization corrections | — |
+| `renorm_momentum` | `0.99` | the momentum of the renormalization statistics | — |
+| `synchronized` | `False` | compute the statistics over all devices | — |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | `foo=1` raises `ValueError: Unrecognized keyword arguments` |
+
 
 ## What you have now
 

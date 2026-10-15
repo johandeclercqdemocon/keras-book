@@ -14,9 +14,9 @@ tables come from the scripts in [`scripts/rows/`](scripts/rows/), one for each c
 Each chapter also carries
 two things that most tutorials leave out. **How it works** explains the mechanism under the API, with one
 block that reproduces it. At the first use of each function, a `####` block prints its full signature from the installed
-library and explains **every** parameter in a table: the default, what it does, and what goes wrong, with a measured
-consequence or `—` when no run measured one. Later chapters link back to the block. A **Reference** section at the end
-of each chapter is an index of its functions.
+library. Later chapters link back to the block. A **Reference** section at the end of each chapter has an index of its
+functions, and a table for each function that explains **every** parameter: the default, what it does, and what goes
+wrong, with a measured consequence or `—` when no run measured one.
 
 Where the book was wrong on its first draft, it says so: [Chapter 16](chapters/16-field-guide.md) lists the
 corrections, and [Appendix B](appendices/B-what-went-wrong.md) lists what the parameter audit found. Where it did not

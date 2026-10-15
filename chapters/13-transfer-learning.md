@@ -148,14 +148,7 @@ keras.models.clone_model(
 
 The function returns a new model with the same architecture. The new layers get new weights from their initializers.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `model` | required | the model to copy | the weights are not copied: the clone of the base had other weights. Copy them with `set_weights`, as this chapter does |
-| `input_tensors` | `None` | new inputs for the clone | — |
-| `clone_function` | `None` | a function that makes the new layer from each old layer | a function that returns its argument gives the same layer objects, and the clone then shares its weights with the original |
-| `call_function` | `None` | a function that calls each new layer, for a functional model | — |
-| `recursive` | `False` | apply `clone_function` inside nested models too | with `False`, the function saw the nested model `base` and `dense`. With `True`, it saw `conv2d`, `global_max_pooling2d` and `dense` |
-| `**kwargs` | — | no other keyword is accepted | `foo=1` raises `ValueError: Unexpected keyword argument(s): ('foo',)` |
+The table under `keras.models.clone_model` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## A different budget reverses the picture
 
@@ -351,6 +344,20 @@ This is the reason that transfer can work with few labels. It is also the reason
 | `keras.models.clone_model` | Three modes | the same architecture with new weights |
 
 `trainable`, `get_weights` and `set_weights` are in [Chapter 3](03-layers-and-weights.md), and `keras.optimizers.Adam` is in [Chapter 6](06-losses-metrics-optimizers.md).
+
+### Parameters
+
+##### `keras.models.clone_model`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `model` | required | the model to copy | the weights are not copied: the clone of the base had other weights. Copy them with `set_weights`, as this chapter does |
+| `input_tensors` | `None` | new inputs for the clone | — |
+| `clone_function` | `None` | a function that makes the new layer from each old layer | a function that returns its argument gives the same layer objects, and the clone then shares its weights with the original |
+| `call_function` | `None` | a function that calls each new layer, for a functional model | — |
+| `recursive` | `False` | apply `clone_function` inside nested models too | with `False`, the function saw the nested model `base` and `dense`. With `True`, it saw `conv2d`, `global_max_pooling2d` and `dense` |
+| `**kwargs` | — | no other keyword is accepted | `foo=1` raises `ValueError: Unexpected keyword argument(s): ('foo',)` |
+
 
 ## What you have now
 

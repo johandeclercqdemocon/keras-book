@@ -199,9 +199,7 @@ keras.mixed_precision.set_global_policy(
 
 The function sets the default types of the layers that you create after the call: the type of the computation and the type of the variables.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `policy` | required | the name of a policy, or a `DTypePolicy` | the setting is global and stays: a layer made after the call still had `mixed_float16` until the block set `"float32"` again. `"float16"` makes the variables 16-bit too, and `"mixed_float16"` keeps them in `float32`. A name such as `"fp16"` raises `ValueError: Cannot convert 'fp16' to a mixed precision DTypePolicy` |
+The table under `keras.mixed_precision.set_global_policy` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## The other back ends
 
@@ -241,6 +239,15 @@ The statement "this code runs on every back end" is a property of the functions 
 | `keras.mixed_precision.set_global_policy` | Four speed options, measured for their effect | the default types of the layers made after the call |
 
 `keras.Model.compile` is in [Chapter 1](01-the-first-model.md), and `keras.utils.set_random_seed` is in [Chapter 2](02-tensors-and-ops.md).
+
+### Parameters
+
+##### `keras.mixed_precision.set_global_policy`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `policy` | required | the name of a policy, or a `DTypePolicy` | the setting is global and stays: a layer made after the call still had `mixed_float16` until the block set `"float32"` again. `"float16"` makes the variables 16-bit too, and `"mixed_float16"` keeps them in `float32`. A name such as `"fp16"` raises `ValueError: Cannot convert 'fp16' to a mixed precision DTypePolicy` |
+
 
 ## What you have now
 

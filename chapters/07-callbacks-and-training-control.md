@@ -74,16 +74,7 @@ keras.callbacks.EarlyStopping(
 
 The callback stops `fit` when the monitored value has not improved for `patience` epochs. The overfitting setup of this chapter gives the numbers in the table.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `monitor` | `'val_loss'` | the key of the logs to watch | a misspelled key such as `"val_los"` raises `ValueError` with a message about `mode`, and not about the name |
-| `min_delta` | `0` | the smallest change that counts as an improvement | with 0.01 and `patience=5`, the run stopped after 23 epochs and not after 36 |
-| `patience` | `0` | the number of epochs with no improvement before the stop | with the default 0, the run stopped after 29 epochs, at the first epoch that did not improve |
-| `verbose` | `0` | 1 prints the epoch of the stop | — |
-| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — (`'auto'` read `val_accuracy` and a top-1 metric named `"top1"` as values to make larger) |
-| `baseline` | `None` | a value that the run must beat | the run does not stop at `patience` epochs above the baseline. A new best value ends the check of that epoch, so the run stops only at the first epoch with no improvement. With `baseline=0.1`, which the run never reached, it stopped after 29 epochs, the same as with `patience=0` |
-| `restore_best_weights` | `False` | give back the weights of the best epoch | with `False`, you get the last model: a loss of 0.2186 and not 0.2176 (this section) |
-| `start_from_epoch` | `0` | the number of epochs before the watch starts | — |
+The table under `keras.callbacks.EarlyStopping` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## Save the best model to disk
 
@@ -149,16 +140,7 @@ keras.callbacks.ModelCheckpoint(
 
 The callback writes the model, or its weights, to a file during `fit`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `filepath` | required | the path. It can hold fields such as `{epoch:02d}` | `"e{epoch:02d}.keras"` made `e01.keras`, `e02.keras` and `e03.keras` in 3 epochs. A path that ends in `.h5` was accepted |
-| `monitor` | `'val_loss'` | the key that decides the best model | — |
-| `verbose` | `0` | 1 prints a line at each save | — |
-| `save_best_only` | `False` | write only when the monitored value improves | with `False`, the file holds the last model, not the best |
-| `save_weights_only` | `False` | write only the weights | with a path that ends in `.keras`, it raises `ValueError: When using save_weights_only=True in ModelCheckpoint, the filepath provided must end in .weights.h5` |
-| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — |
-| `save_freq` | `'epoch'` | `'epoch'`, or a number of batches | — |
-| `initial_value_threshold` | `None` | a value that the first save must beat | with 0.1, which the run never reached, no file was written, and no message said so |
+The table under `keras.callbacks.ModelCheckpoint` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## Lower the learning rate on a plateau
 
@@ -211,17 +193,7 @@ keras.callbacks.ReduceLROnPlateau(
 
 The callback multiplies the learning rate by `factor` when the monitored value has not improved for `patience` epochs.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `monitor` | `'val_loss'` | the key to watch | — |
-| `factor` | `0.1` | the multiplier of the rate | — |
-| `patience` | `10` | the epochs with no improvement before a cut | with the default of 10, no cut can happen in the 15 epochs of this section: the longest stretch with no improvement in the printed losses is 2 epochs. The block uses 1 |
-| `verbose` | `0` | 1 prints each cut | — |
-| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — |
-| `min_delta` | `0.0001` | the smallest change that counts as an improvement | with 0.01, the first cut came at epoch 7 and not at epoch 12, and the rate reached the floor of 0.0001 at epoch 14 |
-| `cooldown` | `0` | the epochs after a cut with no new cut | with 2, the second cut came one epoch later: 0.005 for two epochs, then 0.0025 |
-| `min_lr` | `0.0` | the floor of the rate | — |
-| `**kwargs` | — | accepted and not used | an unknown keyword is ignored with no error. The old name `epsilon=0.5` left `min_delta` at 0.0001 |
+The table under `keras.callbacks.ReduceLROnPlateau` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## Stop on `nan`
 
@@ -261,9 +233,7 @@ keras.callbacks.TerminateOnNaN(
 
 The callback stops `fit` at the first batch with a loss of `nan` or `inf`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `raise_error` | `False` | raise an error and do not only stop | with `True`, the same run raised `RuntimeError: NaN or Inf loss encountered at batch 3`. A script that must fail on a bad run needs it |
+The table under `keras.callbacks.TerminateOnNaN` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## Write a callback
 
@@ -434,6 +404,55 @@ The value at the last batch of an epoch equals the loss of that epoch in the his
 | `keras.callbacks.ReduceLROnPlateau` | Lower the learning rate on a plateau | multiply the rate by `factor` on a plateau |
 | `keras.callbacks.TerminateOnNaN` | Stop on `nan` | stop, or raise, at the first invalid loss |
 | `keras.callbacks.Callback` | Write a callback | the base class: methods that `fit` calls at fixed points |
+
+### Parameters
+
+##### `keras.callbacks.EarlyStopping`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `monitor` | `'val_loss'` | the key of the logs to watch | a misspelled key such as `"val_los"` raises `ValueError` with a message about `mode`, and not about the name |
+| `min_delta` | `0` | the smallest change that counts as an improvement | with 0.01 and `patience=5`, the run stopped after 23 epochs and not after 36 |
+| `patience` | `0` | the number of epochs with no improvement before the stop | with the default 0, the run stopped after 29 epochs, at the first epoch that did not improve |
+| `verbose` | `0` | 1 prints the epoch of the stop | — |
+| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — (`'auto'` read `val_accuracy` and a top-1 metric named `"top1"` as values to make larger) |
+| `baseline` | `None` | a value that the run must beat | the run does not stop at `patience` epochs above the baseline. A new best value ends the check of that epoch, so the run stops only at the first epoch with no improvement. With `baseline=0.1`, which the run never reached, it stopped after 29 epochs, the same as with `patience=0` |
+| `restore_best_weights` | `False` | give back the weights of the best epoch | with `False`, you get the last model: a loss of 0.2186 and not 0.2176 (this section) |
+| `start_from_epoch` | `0` | the number of epochs before the watch starts | — |
+
+##### `keras.callbacks.ModelCheckpoint`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | the path. It can hold fields such as `{epoch:02d}` | `"e{epoch:02d}.keras"` made `e01.keras`, `e02.keras` and `e03.keras` in 3 epochs. A path that ends in `.h5` was accepted |
+| `monitor` | `'val_loss'` | the key that decides the best model | — |
+| `verbose` | `0` | 1 prints a line at each save | — |
+| `save_best_only` | `False` | write only when the monitored value improves | with `False`, the file holds the last model, not the best |
+| `save_weights_only` | `False` | write only the weights | with a path that ends in `.keras`, it raises `ValueError: When using save_weights_only=True in ModelCheckpoint, the filepath provided must end in .weights.h5` |
+| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — |
+| `save_freq` | `'epoch'` | `'epoch'`, or a number of batches | — |
+| `initial_value_threshold` | `None` | a value that the first save must beat | with 0.1, which the run never reached, no file was written, and no message said so |
+
+##### `keras.callbacks.ReduceLROnPlateau`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `monitor` | `'val_loss'` | the key to watch | — |
+| `factor` | `0.1` | the multiplier of the rate | — |
+| `patience` | `10` | the epochs with no improvement before a cut | with the default of 10, no cut can happen in the 15 epochs of this section: the longest stretch with no improvement in the printed losses is 2 epochs. The block uses 1 |
+| `verbose` | `0` | 1 prints each cut | — |
+| `mode` | `'auto'` | `'min'`, `'max'` or `'auto'` | — |
+| `min_delta` | `0.0001` | the smallest change that counts as an improvement | with 0.01, the first cut came at epoch 7 and not at epoch 12, and the rate reached the floor of 0.0001 at epoch 14 |
+| `cooldown` | `0` | the epochs after a cut with no new cut | with 2, the second cut came one epoch later: 0.005 for two epochs, then 0.0025 |
+| `min_lr` | `0.0` | the floor of the rate | — |
+| `**kwargs` | — | accepted and not used | an unknown keyword is ignored with no error. The old name `epsilon=0.5` left `min_delta` at 0.0001 |
+
+##### `keras.callbacks.TerminateOnNaN`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `raise_error` | `False` | raise an error and do not only stop | with `True`, the same run raised `RuntimeError: NaN or Inf loss encountered at batch 3`. A script that must fail on a bad run needs it |
+
 
 ## What you have now
 

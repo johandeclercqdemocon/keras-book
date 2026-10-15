@@ -215,7 +215,8 @@ def _sections(text: str):
 
 
 def _reference(text: str) -> str:
-    m = re.search(r"^## Reference\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    """The Reference index: from `## Reference` to its `### Parameters` part, which holds the tables."""
+    m = re.search(r"^## Reference\n(.*?)(?=^## |^### Parameters|\Z)", text, re.S | re.M)
     return m.group(1) if m else ""
 
 
@@ -227,12 +228,17 @@ def _keras():
     return parameters, resolve, signature_text
 
 
+TABLE_HEAD = re.compile(r"^##### `([A-Za-z_][\w.]*)`\s*\n(.*?)(?=^#{1,6} |\Z)", re.M | re.S)
+
+
 def check_parameters():
     """See `params` in the docstring of this file."""
     parameters, resolve, signature_text = _keras()
     checked, defined = 0, {}
     for p in sorted((ROOT / "chapters").glob("*.md")):
         text = p.read_text(encoding="utf-8")
+        # The table is under `##### name` in the chapter's Reference section, not in the block.
+        tables = {m.group(1): m.group(2) for m in TABLE_HEAD.finditer(text)}
         for name, body in _sections(text):
             where = f"{p.relative_to(ROOT)} `{name}`"
             if name in defined:
@@ -250,7 +256,11 @@ def check_parameters():
             elif m.group(1).strip() != sig:
                 fail(f"{where}: signature block differs from the installed signature (run --signatures)")
             seen = []
-            for r in ROW.finditer(body):
+            if name not in tables and real:
+                fail(f"{where}: no `##### {name}` table in the Reference section")
+            if ROW.search(body):
+                fail(f"{where}: a parameter table inside the block; it belongs under `##### {name}` in Reference")
+            for r in ROW.finditer(tables.get(name, "")):
                 default = r.group(2)
                 for pname in [n.strip("` ") for n in r.group(1).split(", ")]:
                     seen.append(pname)

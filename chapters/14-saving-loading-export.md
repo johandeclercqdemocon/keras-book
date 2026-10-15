@@ -74,12 +74,7 @@ keras.Model.save(
 
 The method writes the model to a `.keras` archive: the config, the weights and the optimizer state.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `filepath` | required | the path. It must end in `.keras`, or in `.h5` for the old format | a path with no suffix raises `ValueError: Invalid filepath extension for saving`. A path that ends in `.h5` is accepted and writes the old format |
-| `overwrite` | `True` | replace a file that exists | with `False` and an existing file, Keras asks a question on the terminal. With no terminal, as in a job, the call raised `EOFError: EOF when reading a line` |
-| `zipped` | `None` | write a zip archive. With `None`, `True` for `.keras` | `False` with a path that ends in `.keras` raises `ValueError`. With no suffix, it wrote a folder with `config.json`, `metadata.json`, `model.weights.h5` and `assets` |
-| `**kwargs` | — | arguments of the old formats | the Keras 2 argument `save_format="tf"` was accepted with no error, and the file was a `.keras` archive all the same |
+The table under `keras.Model.save` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 To write the arrays only, use `save_weights`. The architecture then comes from your code, not from the file.
 
@@ -95,11 +90,7 @@ keras.Model.save_weights(
 
 The method writes the weights, without the config, to an HDF5 file.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `filepath` | required | the path. It must end in `.weights.h5` | `w.h5` raises `ValueError: The filename must end in .weights.h5` |
-| `overwrite` | `True` | replace a file that exists | — |
-| `max_shard_size` | `None` | the largest size of one file, in GB | with a very small size, Keras wrote `s.weights.json` and two files `s_00000.weights.h5` and `s_00001.weights.h5`. Keep the files together |
+The table under `keras.Model.save_weights` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.Model.load_weights`
 
@@ -113,11 +104,7 @@ keras.Model.load_weights(
 
 The method reads weights into a model that has the same architecture.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `filepath` | required | a `.weights.h5` file, or a `.keras` archive | — (a `.keras` file also worked) |
-| `skip_mismatch` | `False` | leave the layers whose shapes do not fit | with `False`, a layer of 3 units and a file of 2 raised `ValueError: A total of 1 objects could not be loaded`. With `True`, the call returned with no error, and that layer kept its old weights |
-| `**kwargs` | — | arguments of other formats | — |
+The table under `keras.Model.load_weights` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## How it works
 
@@ -180,12 +167,7 @@ keras.saving.load_model(
 
 The function rebuilds a model from a `.keras` file and assigns its weights.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `filepath` | required | the path of the file | — |
-| `custom_objects` | `None` | a dict from the names in the file to your classes | without it, an unregistered layer gives a `TypeError` that names the model and not the layer (next section) |
-| `compile` | `True` | restore the loss, the metrics and the optimizer state | with `False`, the model has no optimizer, and `fit` raises `ValueError: You must call compile() before using the model` |
-| `safe_mode` | `True` | refuse to load Python code from the file | a model with a `Lambda` of a Python lambda raised `ValueError: Requested the deserialization of a Lambda layer whose function is a Python lambda`. `False` loads it. Use `False` only for a file that you trust |
+The table under `keras.saving.load_model` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## A custom layer must be findable
 
@@ -250,10 +232,7 @@ keras.saving.register_keras_serializable(
 
 The function returns a decorator that puts a class in the registry under the name `package>name`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `package` | `'Custom'` | the first part of the registered name | — (a class `Twice` became `Custom>Twice`) |
-| `name` | `None` | the second part. With `None`, the class name | with `name="double"` and `package="book"`, the name was `book>double`. The `.keras` file stores this name, and the load looks it up |
+The table under `keras.saving.register_keras_serializable` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## A subclassed model needs `get_config` for its arguments
 
@@ -431,13 +410,7 @@ keras.Model.export(
 
 The method writes an artifact for serving, with no Keras code in it.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `filepath` | required | a folder for the SavedModel | — |
-| `format` | `'tf_saved_model'` | `"tf_saved_model"`, `"onnx"`, `"openvino"`, `"litert"` or `"torch"` | `"onnx"` raised `ModuleNotFoundError: No module named 'onnx'` here, because the package is not installed. An unknown name lists the five formats |
-| `verbose` | `None` | print a summary of the endpoints | with `None`, the call printed 9 lines. The block uses `False` |
-| `input_signature` | `None` | the shapes and types of the inputs. With `None`, the inputs of the model | — (the key of the input is the name of the `keras.Input`) |
-| `**kwargs` | — | the options of each format | — |
+The table under `keras.Model.export` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## Reference
 
@@ -449,6 +422,60 @@ The method writes an artifact for serving, with no Keras code in it.
 | `keras.saving.load_model` | A round trip is exact | rebuild from the config, then assign the weights |
 | `keras.saving.register_keras_serializable` | A custom layer must be findable | a class in the registry as `package>name` |
 | `keras.Model.export` | Export for serving | a SavedModel with no Keras code |
+
+### Parameters
+
+##### `keras.Model.save`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | the path. It must end in `.keras`, or in `.h5` for the old format | a path with no suffix raises `ValueError: Invalid filepath extension for saving`. A path that ends in `.h5` is accepted and writes the old format |
+| `overwrite` | `True` | replace a file that exists | with `False` and an existing file, Keras asks a question on the terminal. With no terminal, as in a job, the call raised `EOFError: EOF when reading a line` |
+| `zipped` | `None` | write a zip archive. With `None`, `True` for `.keras` | `False` with a path that ends in `.keras` raises `ValueError`. With no suffix, it wrote a folder with `config.json`, `metadata.json`, `model.weights.h5` and `assets` |
+| `**kwargs` | — | arguments of the old formats | the Keras 2 argument `save_format="tf"` was accepted with no error, and the file was a `.keras` archive all the same |
+
+##### `keras.Model.save_weights`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | the path. It must end in `.weights.h5` | `w.h5` raises `ValueError: The filename must end in .weights.h5` |
+| `overwrite` | `True` | replace a file that exists | — |
+| `max_shard_size` | `None` | the largest size of one file, in GB | with a very small size, Keras wrote `s.weights.json` and two files `s_00000.weights.h5` and `s_00001.weights.h5`. Keep the files together |
+
+##### `keras.Model.load_weights`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | a `.weights.h5` file, or a `.keras` archive | — (a `.keras` file also worked) |
+| `skip_mismatch` | `False` | leave the layers whose shapes do not fit | with `False`, a layer of 3 units and a file of 2 raised `ValueError: A total of 1 objects could not be loaded`. With `True`, the call returned with no error, and that layer kept its old weights |
+| `**kwargs` | — | arguments of other formats | — |
+
+##### `keras.saving.load_model`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | the path of the file | — |
+| `custom_objects` | `None` | a dict from the names in the file to your classes | without it, an unregistered layer gives a `TypeError` that names the model and not the layer (next section) |
+| `compile` | `True` | restore the loss, the metrics and the optimizer state | with `False`, the model has no optimizer, and `fit` raises `ValueError: You must call compile() before using the model` |
+| `safe_mode` | `True` | refuse to load Python code from the file | a model with a `Lambda` of a Python lambda raised `ValueError: Requested the deserialization of a Lambda layer whose function is a Python lambda`. `False` loads it. Use `False` only for a file that you trust |
+
+##### `keras.saving.register_keras_serializable`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `package` | `'Custom'` | the first part of the registered name | — (a class `Twice` became `Custom>Twice`) |
+| `name` | `None` | the second part. With `None`, the class name | with `name="double"` and `package="book"`, the name was `book>double`. The `.keras` file stores this name, and the load looks it up |
+
+##### `keras.Model.export`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `filepath` | required | a folder for the SavedModel | — |
+| `format` | `'tf_saved_model'` | `"tf_saved_model"`, `"onnx"`, `"openvino"`, `"litert"` or `"torch"` | `"onnx"` raised `ModuleNotFoundError: No module named 'onnx'` here, because the package is not installed. An unknown name lists the five formats |
+| `verbose` | `None` | print a summary of the endpoints | with `None`, the call printed 9 lines. The block uses `False` |
+| `input_signature` | `None` | the shapes and types of the inputs. With `None`, the inputs of the model | — (the key of the input is the name of the `keras.Input`) |
+| `**kwargs` | — | the options of each format | — |
+
 
 ## What you have now
 

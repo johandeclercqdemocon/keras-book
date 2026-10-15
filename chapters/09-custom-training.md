@@ -112,11 +112,7 @@ keras.losses.Loss(
 
 The class is the base of a loss. A subclass writes `call(y_true, y_pred)`, which returns one value for each sample, and passes `**kwargs` to the base.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `name` | `None` | the name. With `None`, the class name in snake case | — (a class `Sq` got the name `sq`) |
-| `reduction` | `'sum_over_batch_size'` | how the values of the samples combine | for the squared errors 1, 4, 9 and 16, the default gave 7.5 and `"sum"` gave 30.0. `None` returns the values of the samples. `"mean"` is also accepted |
-| `dtype` | `None` | the type of the computation | — |
+The table under `keras.losses.Loss` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## A custom metric
 
@@ -188,10 +184,7 @@ keras.metrics.Metric(
 
 The class is the base of a metric. A subclass writes `update_state`, `result` and `reset_state`, and keeps its state in variables made with `add_variable`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `dtype` | `None` | the type of the state and of the result | — |
-| `name` | `None` | the key in `history`. With `None`, the class name in snake case | — |
+The table under `keras.metrics.Metric` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 A state in a plain Python attribute does not work. A metric that counted the batches in `self.n += 1.0` reported 2.0 for the first epoch and 0.0 for the second. Each epoch had 43 batches. `fit` runs a compiled function, and the Python line runs only while Keras traces it. The same count in a variable from `add_variable` gave 1,347 samples in each epoch, which is correct.
 
@@ -209,13 +202,7 @@ keras.metrics.Metric.add_variable(
 
 The method creates a variable of the state and tracks it, so that `reset_state` and saving can find it.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `shape` | required | the shape of the state | — |
-| `initializer` | required | the start values, such as `"zeros"` | there is no default, unlike `Layer.add_weight`: without it, the call raises `TypeError: Metric.add_variable() missing 1 required positional argument: 'initializer'` |
-| `dtype` | `None` | the type. With `None`, the type of the metric | — |
-| `aggregation` | `'sum'` | how to combine copies on several devices. The default is `'sum'`, and for a layer weight it is `'none'` | — |
-| `name` | `None` | the name of the variable | — |
+The table under `keras.metrics.Metric.add_variable` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## A custom `train_step`
 
@@ -307,13 +294,7 @@ keras.Model.compute_loss(
 
 The method returns the loss of one batch: the loss of `compile` plus the losses of the layers, such as an L2 penalty.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `x` | `None` | the inputs of the batch | — |
-| `y` | `None` | the targets | — |
-| `y_pred` | `None` | the output of the model for `x` | it is not computed for you: without it, the call raises `ValueError: Attempt to convert a value (None) with an unsupported type` |
-| `sample_weight` | `None` | a weight for each sample | the default reduction divides by the batch size, not by the sum of the weights. With the weight 0 on 16 of 32 samples, the cross-entropy part was half the loss of the 16 samples alone |
-| `training` | `True` | the mode of the call | — (with `training=False`, the L2 penalty of 1.674 was still in the loss: 4.2105 in both modes) |
+The table under `keras.Model.compute_loss` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.Model.compute_metrics`
 
@@ -328,12 +309,7 @@ keras.Model.compute_metrics(
 
 The method updates the metrics of `compile` with one batch and returns their values as a dict, with the key `loss` first.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `x` | required | the inputs of the batch | — |
-| `y` | required | the targets | — |
-| `y_pred` | required | the output of the model | — |
-| `sample_weight` | `None` | a weight for each sample | — |
+The table under `keras.Model.compute_metrics` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 The `loss` value in the dict comes from the loss tracker, and `compute_metrics` does not update it. After a reset of the metrics, the call returned `loss` 0.0 and the correct accuracy.
 
@@ -348,10 +324,7 @@ keras.optimizers.Optimizer.apply(
 
 The method changes each variable with its gradient and adds 1 to `optimizer.iterations`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `grads` | required | one gradient for each variable, in the same order | a list that is too short is accepted with no error: 1 gradient for 2 variables changed the first variable and left the second at 1.0 |
-| `trainable_variables` | `None` | the variables. With `None`, the variables of the first call | in a first call, `None` raises `ValueError: When passing grads without variables, the optimizer must already be built` |
+The table under `keras.optimizers.Optimizer.apply` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## A portable change: override `compute_loss`
 
@@ -451,6 +424,60 @@ The invariant is this: Adam steps by a fixed size at the start, and SGD steps in
 | `keras.Model.compute_loss` | A custom `train_step` | the loss of `compile` plus the losses of the layers |
 | `keras.Model.compute_metrics` | A custom `train_step` | update the metrics and return their values |
 | `keras.optimizers.Optimizer.apply` | A custom `train_step` | one update of the variables with their gradients |
+
+### Parameters
+
+##### `keras.losses.Loss`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `name` | `None` | the name. With `None`, the class name in snake case | — (a class `Sq` got the name `sq`) |
+| `reduction` | `'sum_over_batch_size'` | how the values of the samples combine | for the squared errors 1, 4, 9 and 16, the default gave 7.5 and `"sum"` gave 30.0. `None` returns the values of the samples. `"mean"` is also accepted |
+| `dtype` | `None` | the type of the computation | — |
+
+##### `keras.metrics.Metric`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `dtype` | `None` | the type of the state and of the result | — |
+| `name` | `None` | the key in `history`. With `None`, the class name in snake case | — |
+
+##### `keras.metrics.Metric.add_variable`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `shape` | required | the shape of the state | — |
+| `initializer` | required | the start values, such as `"zeros"` | there is no default, unlike `Layer.add_weight`: without it, the call raises `TypeError: Metric.add_variable() missing 1 required positional argument: 'initializer'` |
+| `dtype` | `None` | the type. With `None`, the type of the metric | — |
+| `aggregation` | `'sum'` | how to combine copies on several devices. The default is `'sum'`, and for a layer weight it is `'none'` | — |
+| `name` | `None` | the name of the variable | — |
+
+##### `keras.Model.compute_loss`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | `None` | the inputs of the batch | — |
+| `y` | `None` | the targets | — |
+| `y_pred` | `None` | the output of the model for `x` | it is not computed for you: without it, the call raises `ValueError: Attempt to convert a value (None) with an unsupported type` |
+| `sample_weight` | `None` | a weight for each sample | the default reduction divides by the batch size, not by the sum of the weights. With the weight 0 on 16 of 32 samples, the cross-entropy part was half the loss of the 16 samples alone |
+| `training` | `True` | the mode of the call | — (with `training=False`, the L2 penalty of 1.674 was still in the loss: 4.2105 in both modes) |
+
+##### `keras.Model.compute_metrics`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `x` | required | the inputs of the batch | — |
+| `y` | required | the targets | — |
+| `y_pred` | required | the output of the model | — |
+| `sample_weight` | `None` | a weight for each sample | — |
+
+##### `keras.optimizers.Optimizer.apply`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `grads` | required | one gradient for each variable, in the same order | a list that is too short is accepted with no error: 1 gradient for 2 variables changed the first variable and left the second at 1.0 |
+| `trainable_variables` | `None` | the variables. With `None`, the variables of the first call | in a first call, `None` raises `ValueError: When passing grads without variables, the optimizer must already be built` |
+
 
 ## What you have now
 

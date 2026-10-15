@@ -137,13 +137,7 @@ keras.layers.Normalization(
 
 The layer computes `(x - mean) / sqrt(variance)` for each feature. The statistics come from `adapt` or from the arguments.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `axis` | `-1` | the axis that keeps its own statistics | the default gives one mean for each of the 64 pixels. `axis=None` gives one mean for all of them |
-| `mean` | `None` | a fixed mean, so that no `adapt` is necessary | `mean` without `variance` raises `ValueError: When setting values directly, both mean and variance must be set` |
-| `variance` | `None` | a fixed variance | with `mean=2.0` and `variance=4.0`, the input 4.0 gave 1.0 |
-| `invert` | `False` | compute the inverse map, `x * sqrt(variance) + mean` | — (an adapted inverse layer gave back the test pixels with a largest error of 9.5e-07) |
-| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+The table under `keras.layers.Normalization` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 #### `keras.layers.Normalization.adapt`
 
@@ -155,9 +149,7 @@ keras.layers.Normalization.adapt(
 
 The method makes one pass over the data and stores the mean, the variance and the count of each feature.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `data` | required | an array, a tensor or a `tf.data.Dataset` | a constant pixel gives 10,000,000 on test data (next section). A second `adapt` replaces the statistics and does not add to them: `adapt` on `[0, 2]`, then on `[10, 12]`, gave the mean 11.0. A dataset of `(x, y)` pairs is accepted, and the layer uses only `x` |
+The table under `keras.layers.Normalization.adapt` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 ## A constant pixel can explode
 
@@ -279,11 +271,7 @@ keras.utils.PyDataset(
 
 The class is the base of a Python data source for `fit`. A subclass defines `__len__` and `__getitem__`, and it can define `on_epoch_end`.
 
-| parameter | default | what it does | what goes wrong |
-|---|---|---|---|
-| `workers` | `1` | the number of threads or processes that load batches | — |
-| `use_multiprocessing` | `False` | use processes and not threads for the workers | — |
-| `max_queue_size` | `10` | the number of batches that wait in the queue | — |
+The table under `keras.utils.PyDataset` in the Reference section of this chapter gives each parameter and what goes wrong with it.
 
 A subclass must pass its `**kwargs` to `super().__init__`. Without that call, `fit` still ran, and it wrote the warning "Your PyDataset class should call super().__init__(**kwargs) in its constructor". An unknown keyword such as `foo=1` raises `TypeError` in the base class.
 
@@ -338,6 +326,33 @@ Two consequences follow. Adapt on the training set only, or the test set leaks i
 | `keras.utils.PyDataset` | Three ways to feed `fit` | a Python data source with `__len__` and `__getitem__` |
 
 `keras.Model.fit` is in [Chapter 1](01-the-first-model.md). `keras.utils.to_categorical` is in [Chapter 6](06-losses-metrics-optimizers.md), where the book first uses it.
+
+### Parameters
+
+##### `keras.layers.Normalization`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `axis` | `-1` | the axis that keeps its own statistics | the default gives one mean for each of the 64 pixels. `axis=None` gives one mean for all of them |
+| `mean` | `None` | a fixed mean, so that no `adapt` is necessary | `mean` without `variance` raises `ValueError: When setting values directly, both mean and variance must be set` |
+| `variance` | `None` | a fixed variance | with `mean=2.0` and `variance=4.0`, the input 4.0 gave 1.0 |
+| `invert` | `False` | compute the inverse map, `x * sqrt(variance) + mean` | — (an adapted inverse layer gave back the test pixels with a largest error of 9.5e-07) |
+| `**kwargs` | — | the arguments of `Layer`, such as `name` | — |
+
+##### `keras.layers.Normalization.adapt`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `data` | required | an array, a tensor or a `tf.data.Dataset` | a constant pixel gives 10,000,000 on test data (next section). A second `adapt` replaces the statistics and does not add to them: `adapt` on `[0, 2]`, then on `[10, 12]`, gave the mean 11.0. A dataset of `(x, y)` pairs is accepted, and the layer uses only `x` |
+
+##### `keras.utils.PyDataset`
+
+| parameter | default | what it does | what goes wrong |
+|---|---|---|---|
+| `workers` | `1` | the number of threads or processes that load batches | — |
+| `use_multiprocessing` | `False` | use processes and not threads for the workers | — |
+| `max_queue_size` | `10` | the number of batches that wait in the queue | — |
+
 
 ## What you have now
 
