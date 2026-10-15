@@ -84,5 +84,7 @@ PYTHON=.venv/bin/python scripts/rows/run_all.sh    # rerun the evidence of every
 
 At the last full run, the checker ran 123 Python blocks and compared 117 printed outputs. It checked the signature, the defaults and one row for each parameter of 66 callables: 418 rows. The run took 26 minutes on one CPU, so run it on an idle machine.
 
+The full check also passed on a second machine (Intel i7-8750H, Debian 13, Python 3.13.5).
+
 Printed values are rounded to 3 or 4 decimals. Two runs of the same training can differ in the eighth decimal of a
 loss. The book compares at the precision that it prints.
